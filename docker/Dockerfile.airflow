@@ -1,5 +1,12 @@
 FROM apache/airflow:2.10.5-python3.11
 
+USER root
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends locales \
+    && sed --in-place '/en_US.UTF-8/s/^# //g' /etc/locale.gen \
+    && locale-gen \
+    && rm --recursive --force /var/lib/apt/lists/*
+
 COPY pyproject.toml README.md /opt/project/
 COPY src /opt/project/src
 
@@ -8,4 +15,6 @@ RUN pip install --no-cache-dir /opt/project
 
 COPY --chown=airflow:0 dags /opt/airflow/dags
 ENV DATA_DIR=/opt/project/data/raw \
-    MODEL_DIR=/opt/project/models
+    MODEL_DIR=/opt/project/models \
+    LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8
