@@ -52,6 +52,7 @@ services:
     volumes:
       - ../models:/opt/project/models
       - ../data/raw:/opt/project/data/raw:ro
+      - ../dags:/opt/airflow/dags:ro
       - airflow-data:/opt/airflow
 
 volumes:
