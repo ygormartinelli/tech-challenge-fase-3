@@ -66,6 +66,14 @@ latência média, p50, p95 e throughput em `reports/latency_benchmark.json`.
 O benchmark falha se os rótulos não forem equivalentes ou se ONNX Runtime não
 reduzir a latência p50. Isso evita declarar uma otimização sem evidência.
 
+### Resultados obtidos
+
+Na execução inicial com o dataset fornecido, o modelo original atingiu Accuracy
+de `0.5821` e Macro-F1 de `0.5845` no conjunto de teste. O benchmark confirmou
+equivalência dos rótulos entre as duas variantes e reduziu a latência p50 de
+`1.183 ms` para `0.353 ms`; o throughput passou de `789.93` para `2425.83`
+predições por segundo.
+
 ## Monitoramento e orquestração
 
 Após treinar o modelo, inicie a stack de observabilidade:
