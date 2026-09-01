@@ -63,6 +63,11 @@ Rotas públicas:
 `models/classifier.onnx`. `make benchmark` aquece ambos os modelos e compara
 latência média, p50, p95 e throughput em `reports/latency_benchmark.json`.
 
+Com a API em execução, `make api-benchmark` mede o mesmo conjunto de métricas
+de ponta a ponta em `http://localhost:8000/predict`. Execute-o uma vez com
+`MODEL_VARIANT=original` e outra com `MODEL_VARIANT=optimized` no serviço para
+comparar as variantes conteinerizadas.
+
 O benchmark falha se os rótulos não forem equivalentes ou se ONNX Runtime não
 reduzir a latência p50. Isso evita declarar uma otimização sem evidência.
 

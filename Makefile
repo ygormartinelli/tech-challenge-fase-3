@@ -1,4 +1,4 @@
-.PHONY: install lint test train optimize benchmark run compose airflow
+.PHONY: install lint test train optimize benchmark api-benchmark run compose airflow
 
 install:
 	uv sync --all-groups
@@ -17,6 +17,9 @@ optimize:
 
 benchmark:
 	uv run python -m techchallenge_fase3.pipelines.benchmark
+
+api-benchmark:
+	uv run python -m techchallenge_fase3.pipelines.api_benchmark
 
 run:
 	uv run uvicorn techchallenge_fase3.api.main:app --reload
