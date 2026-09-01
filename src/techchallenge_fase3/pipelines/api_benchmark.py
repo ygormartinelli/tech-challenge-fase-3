@@ -2,7 +2,6 @@
 
 import json
 from time import perf_counter
-from typing import Any
 from urllib.request import Request, urlopen
 
 import numpy as np
@@ -10,7 +9,9 @@ import numpy as np
 API_URL = "http://localhost:8000/predict"
 ITERATIONS = 100
 WARMUP_ITERATIONS = 10
-SAMPLE_TEXT = "Tumor cells were investigated in the patient and cancer treatment was discussed."
+SAMPLE_TEXT = (
+    "Tumor cells were investigated in the patient and cancer treatment was discussed."
+)
 
 
 def request_prediction(url: str, text: str) -> None:
