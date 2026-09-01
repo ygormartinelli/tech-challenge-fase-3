@@ -1,0 +1,14 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []}, "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0}, "id": 1, "targets": [{"expr": "sum(medical_classifier_requests_total)", "refId": "A"}], "title": "Total de requisições", "type": "stat"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}, "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0}, "id": 2, "targets": [{"expr": "histogram_quantile(0.95, sum(rate(medical_classifier_request_duration_seconds_bucket[5m])) by (le))", "refId": "A"}], "title": "Latência p95", "type": "stat"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}, "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0}, "id": 3, "targets": [{"expr": "sum(medical_classifier_prediction_errors_total)", "refId": "A"}], "title": "Erros de inferência", "type": "stat"}
+  ],
+  "schemaVersion": 39,
+  "tags": ["tech-challenge", "medical"],
+  "title": "Medical Classifier",
+  "uid": "medical-classifier",
+  "version": 1
+}

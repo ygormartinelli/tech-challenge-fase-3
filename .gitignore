@@ -1,0 +1,14 @@
+.env
+.venv/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+data/raw/*.csv
+models/*
+!models/.gitkeep
+reports/*.json
+reports/*.csv
+grafana-data/
+prometheus-data/
+airflow-data/

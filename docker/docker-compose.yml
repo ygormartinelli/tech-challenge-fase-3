@@ -1,0 +1,60 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      MODEL_DIR: /app/models
+      DATA_DIR: /app/data/raw
+      MODEL_VARIANT: ${MODEL_VARIANT:-optimized}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ../models:/app/models
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command: --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+  airflow:
+    profiles: ["airflow"]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.airflow
+    command: airflow standalone
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    ports:
+      - "${AIRFLOW_PORT:-8080}:8080"
+    volumes:
+      - ../models:/opt/project/models
+      - ../data/raw:/opt/project/data/raw:ro
+      - airflow-data:/opt/airflow
+
+volumes:
+  airflow-data:
+  grafana-data:
+  prometheus-data:
