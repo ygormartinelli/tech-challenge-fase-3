@@ -79,6 +79,12 @@ equivalência dos rótulos entre as duas variantes e reduziu a latência p50 de
 `1.183 ms` para `0.353 ms`; o throughput passou de `789.93` para `2425.83`
 predições por segundo.
 
+No benchmark de ponta a ponta da API conteinerizada, o modelo original obteve
+p50 de `12.769 ms` e throughput de `56.73` requisições por segundo. A variante
+ONNX reduziu o p50 para `9.173 ms` e elevou o throughput para `68.17`
+requisições por segundo. Ambas as medições usam 10 requisições de aquecimento e
+100 requisições de teste com o mesmo texto sintético.
+
 ## Monitoramento e orquestração
 
 Após treinar o modelo, inicie a stack de observabilidade:
