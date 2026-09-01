@@ -5,6 +5,13 @@ from pathlib import Path
 import pandas as pd
 
 REQUIRED_COLUMNS = {"condition_label", "medical_abstract"}
+LABEL_NAMES = {
+    1: "neoplasms",
+    2: "digestive system diseases",
+    3: "nervous system diseases",
+    4: "cardiovascular diseases",
+    5: "general pathological conditions",
+}
 
 
 def load_dataset(path: Path) -> pd.DataFrame:

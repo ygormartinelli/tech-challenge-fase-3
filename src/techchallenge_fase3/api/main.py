@@ -11,7 +11,7 @@ from starlette.responses import Response
 
 from techchallenge_fase3.artifacts import load_predictor
 from techchallenge_fase3.config import Settings
-from techchallenge_fase3.data import load_label_names
+from techchallenge_fase3.data import LABEL_NAMES
 
 REQUESTS = Counter(
     "medical_classifier_requests_total",
@@ -107,7 +107,7 @@ def _get_service(request: Request) -> tuple[Any, dict[int, str], str]:
         predictor, variant = load_predictor(settings.model_dir, settings.model_variant)
         request.app.state.service = (
             predictor,
-            load_label_names(settings.labels_path),
+            LABEL_NAMES,
             variant,
         )
     return request.app.state.service

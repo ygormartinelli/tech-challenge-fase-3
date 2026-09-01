@@ -9,8 +9,6 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 RUN pip install --no-cache-dir .
 
-COPY data/raw/medical_tc_labels.csv ./data/raw/medical_tc_labels.csv
-
 EXPOSE 8000
 
 CMD ["uvicorn", "techchallenge_fase3.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

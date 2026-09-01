@@ -3,8 +3,7 @@
 .pytest_cache
 .ruff_cache
 __pycache__
-data/raw/*
-!data/raw/medical_tc_labels.csv
+data/raw
 models
 reports
 .env
