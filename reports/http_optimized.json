@@ -1,0 +1,25 @@
+{
+  "environment": {
+    "created_at": "2026-09-15T13:40:12.033251+00:00",
+    "python": "3.11.15",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "scikit-learn": "1.9.0",
+      "numpy": "2.4.6",
+      "pandas": "2.3.3",
+      "onnxruntime": "1.29.0",
+      "skl2onnx": "1.20.0"
+    }
+  },
+  "variant": "optimized",
+  "seed": 42,
+  "iterations": 200,
+  "warmup_iterations": 20,
+  "test_sha256": "1eecea73c9ecad292c55e10403bd139fab9580545d6878482997c5564d51ac05",
+  "latency": {
+    "mean_ms": 7.398214999996071,
+    "p50_ms": 4.824200000030032,
+    "p95_ms": 25.938100000303166,
+    "throughput_per_second": 135.16773978595256
+  }
+}

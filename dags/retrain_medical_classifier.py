@@ -1,49 +1,31 @@
-"""DAG de retreino do classificador de categorias médicas."""
+"""Retreino local com comandos isolados das dependências do Airflow."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
-from airflow.decorators import dag, task
+from airflow import DAG
+from airflow.operators.bash import BashOperator
 
+STAGES = ("validate", "train", "optimize", "evaluate", "benchmark", "publish")
+PYTHON = "/opt/project/.venv/bin/python"
 
-@dag(
+with DAG(
+    dag_id="retrain_medical_classifier",
     schedule=None,
-    start_date=datetime(2025, 1, 1),
+    start_date=datetime(2025, 1, 1, tzinfo=UTC),
     catchup=False,
+    max_active_runs=1,
     tags=["medical", "training"],
-)
-def retrain_medical_classifier() -> None:
-    """Orquestra a validação, treino, otimização e benchmark."""
-
-    @task
-    def validate_data() -> None:
-        """Valida o contrato do arquivo de treino."""
-        from techchallenge_fase3.config import Settings
-        from techchallenge_fase3.data import load_dataset
-
-        load_dataset(Settings().train_path)
-
-    @task
-    def train() -> None:
-        """Executa o pipeline reutilizável de treino."""
-        from techchallenge_fase3.pipelines.train import main
-
-        main()
-
-    @task
-    def optimize() -> None:
-        """Executa a exportação ONNX reutilizável."""
-        from techchallenge_fase3.pipelines.optimize import main
-
-        main()
-
-    @task
-    def benchmark() -> None:
-        """Executa o benchmark e critério de aceitação."""
-        from techchallenge_fase3.pipelines.benchmark import main
-
-        main()
-
-    validate_data() >> train() >> optimize() >> benchmark()
-
-
-retrain_medical_classifier()
+    default_args={"retries": 0},
+    description="Retreino com avaliação e publicação de candidatos aprovados.",
+) as dag:
+    previous = None
+    for stage in STAGES:
+        current = BashOperator(
+            task_id=stage,
+            bash_command=f"{PYTHON} -m techchallenge_fase3.pipelines.{stage}",
+            cwd="/opt/project",
+            do_xcom_push=False,
+        )
+        if previous is not None:
+            previous >> current
+        previous = current

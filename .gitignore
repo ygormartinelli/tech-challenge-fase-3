@@ -7,8 +7,9 @@ __pycache__/
 data/raw/*.csv
 models/*
 !models/.gitkeep
-reports/*.json
-reports/*.csv
+reports/runtime/
+reports/*.html
+.ipynb_checkpoints/
 grafana-data/
 prometheus-data/
 airflow-data/

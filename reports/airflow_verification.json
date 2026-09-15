@@ -1,0 +1,171 @@
+{
+  "environment": {
+    "created_at": "2026-09-15T14:07:25.655043+00:00",
+    "python": "3.11.15",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "scikit-learn": "1.9.0",
+      "numpy": "2.4.6",
+      "pandas": "2.3.3",
+      "onnxruntime": "1.29.0",
+      "skl2onnx": "1.20.0"
+    }
+  },
+  "run_id": "acceptance-final-20260915",
+  "tasks": [
+    {
+      "dag_id": "retrain_medical_classifier",
+      "execution_date": "2026-09-15T14:05:41+00:00",
+      "task_id": "validate",
+      "state": "success",
+      "start_date": "2026-09-15T14:05:45.718053+00:00",
+      "end_date": "2026-09-15T14:05:48.548495+00:00"
+    },
+    {
+      "dag_id": "retrain_medical_classifier",
+      "execution_date": "2026-09-15T14:05:41+00:00",
+      "task_id": "train",
+      "state": "success",
+      "start_date": "2026-09-15T14:05:52.150682+00:00",
+      "end_date": "2026-09-15T14:06:21.805535+00:00"
+    },
+    {
+      "dag_id": "retrain_medical_classifier",
+      "execution_date": "2026-09-15T14:05:41+00:00",
+      "task_id": "optimize",
+      "state": "success",
+      "start_date": "2026-09-15T14:06:25.495983+00:00",
+      "end_date": "2026-09-15T14:06:31.316797+00:00"
+    },
+    {
+      "dag_id": "retrain_medical_classifier",
+      "execution_date": "2026-09-15T14:05:41+00:00",
+      "task_id": "evaluate",
+      "state": "success",
+      "start_date": "2026-09-15T14:06:34.800479+00:00",
+      "end_date": "2026-09-15T14:06:39.140618+00:00"
+    },
+    {
+      "dag_id": "retrain_medical_classifier",
+      "execution_date": "2026-09-15T14:05:41+00:00",
+      "task_id": "benchmark",
+      "state": "success",
+      "start_date": "2026-09-15T14:06:43.166539+00:00",
+      "end_date": "2026-09-15T14:06:47.942175+00:00"
+    },
+    {
+      "dag_id": "retrain_medical_classifier",
+      "execution_date": "2026-09-15T14:05:41+00:00",
+      "task_id": "publish",
+      "state": "success",
+      "start_date": "2026-09-15T14:06:51.479698+00:00",
+      "end_date": "2026-09-15T14:06:54.676992+00:00"
+    }
+  ],
+  "runtime_benchmark": {
+    "environment": {
+      "created_at": "2026-09-15T14:06:45.951804+00:00",
+      "python": "3.11.11",
+      "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+      "packages": {
+        "scikit-learn": "1.9.0",
+        "numpy": "2.4.6",
+        "pandas": "2.3.3",
+        "onnxruntime": "1.29.0",
+        "skl2onnx": "1.20.0"
+      }
+    },
+    "seed": 42,
+    "iterations_per_round": 200,
+    "warmup_iterations": 20,
+    "rounds": 3,
+    "contract": "single text -> label and probabilities; sequential, CPU",
+    "test_sha256": "1eecea73c9ecad292c55e10403bd139fab9580545d6878482997c5564d51ac05",
+    "model_hashes": {
+      "classifier.joblib": "cc7588b01e5ce8f9eff76a6be8eca26c42c2a49edecf7448e6b0cc21ba5546d6",
+      "classifier.onnx": "3e6d35a34096e59fe07bb86d84002c69ddcbc122816d5ec6fb19e201f2827203"
+    },
+    "equivalence": {
+      "rows": 2894,
+      "label_mismatches": 0,
+      "max_probability_absolute_error": 2.060803160341962e-07,
+      "probability_tolerance": 1e-05,
+      "passed": true
+    },
+    "latency": {
+      "original": {
+        "mean_ms": 0.8470334816593095,
+        "p50_ms": 0.7987819999470958,
+        "p95_ms": 1.1753244500596336,
+        "throughput_per_second": 1180.5908758660098
+      },
+      "optimized": {
+        "mean_ms": 0.18705011166427235,
+        "p50_ms": 0.17673249976724037,
+        "p95_ms": 0.26472864965398907,
+        "throughput_per_second": 5346.160935711463
+      },
+      "rounds": [
+        {
+          "original": {
+            "mean_ms": 0.833334069952798,
+            "p50_ms": 0.7845739996810153,
+            "p95_ms": 1.1390681503598894,
+            "throughput_per_second": 1199.9989392689085
+          },
+          "optimized": {
+            "mean_ms": 0.1864477750086735,
+            "p50_ms": 0.1763575000950368,
+            "p95_ms": 0.26136574988413463,
+            "throughput_per_second": 5363.432199464329
+          }
+        },
+        {
+          "optimized": {
+            "mean_ms": 0.1846987500130126,
+            "p50_ms": 0.17370149998896522,
+            "p95_ms": 0.2619192496695177,
+            "throughput_per_second": 5414.221806750435
+          },
+          "original": {
+            "mean_ms": 0.8488660349939892,
+            "p50_ms": 0.8121434998429322,
+            "p95_ms": 1.148461449656679,
+            "throughput_per_second": 1178.0421866061363
+          }
+        },
+        {
+          "original": {
+            "mean_ms": 0.8589003400311412,
+            "p50_ms": 0.800876000084827,
+            "p95_ms": 1.2133214499954192,
+            "throughput_per_second": 1164.2794319580114
+          },
+          "optimized": {
+            "mean_ms": 0.19000380997113098,
+            "p50_ms": 0.18002500019065337,
+            "p95_ms": 0.2676657999927556,
+            "throughput_per_second": 5263.0523574866165
+          }
+        }
+      ]
+    },
+    "quantization": {
+      "graph_operators": [
+        "Flatten",
+        "LinearClassifier",
+        "Mul",
+        "Normalizer",
+        "Reshape",
+        "StringNormalizer",
+        "TfIdfVectorizer",
+        "Tokenizer"
+      ],
+      "eligible_dynamic_operators": [],
+      "applied": false,
+      "reason": "Mantido ONNX float; nÃ£o hÃ¡ ganho de quantizaÃ§Ã£o demonstrado."
+    },
+    "optimized_approved": true
+  },
+  "scheduler_executed": true
+}

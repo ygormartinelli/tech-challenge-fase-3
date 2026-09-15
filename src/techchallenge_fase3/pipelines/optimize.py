@@ -7,8 +7,8 @@ from techchallenge_fase3.config import Settings
 def main() -> None:
     """Exporta o artefato original para o formato ONNX."""
     settings = Settings()
-    model = load_original(settings.model_dir)
-    export_onnx(model, settings.model_dir)
+    model = load_original(settings.candidate_dir)
+    export_onnx(model, settings.candidate_dir)
 
 
 if __name__ == "__main__":

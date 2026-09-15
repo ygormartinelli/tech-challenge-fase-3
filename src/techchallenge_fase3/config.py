@@ -1,6 +1,7 @@
 """Configurações centralizadas da aplicação."""
 
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -12,7 +13,14 @@ class Settings(BaseSettings):
 
     data_dir: Path = Path("data/raw")
     model_dir: Path = Path("models")
-    model_variant: str = "optimized"
+    report_dir: Path = Path("reports")
+    candidate_name: str = "candidate"
+    model_variant: Literal["original", "optimized"] = "optimized"
+
+    @property
+    def candidate_dir(self) -> Path:
+        """Separa retreino dos artefatos publicados para inferência."""
+        return self.model_dir / self.candidate_name
 
     @property
     def train_path(self) -> Path:

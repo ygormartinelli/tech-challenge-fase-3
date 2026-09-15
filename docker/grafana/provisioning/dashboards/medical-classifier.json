@@ -1,14 +1,135 @@
 {
-  "annotations": {"list": []},
-  "editable": true,
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
   "panels": [
-    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []}, "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0}, "id": 1, "targets": [{"expr": "sum(medical_classifier_requests_total)", "refId": "A"}], "title": "Total de requisições", "type": "stat"},
-    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}, "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0}, "id": 2, "targets": [{"expr": "histogram_quantile(0.95, sum(rate(medical_classifier_request_duration_seconds_bucket[5m])) by (le))", "refId": "A"}], "title": "Latência p95", "type": "stat"},
-    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}, "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0}, "id": 3, "targets": [{"expr": "sum(medical_classifier_prediction_errors_total)", "refId": "A"}], "title": "Erros de inferência", "type": "stat"}
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "type": "stat",
+      "id": 1,
+      "title": "Predições recebidas desde o início",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum(medical_classifier_requests_total{path=\"/predict\"}) or vector(0)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "type": "timeseries",
+      "id": 2,
+      "title": "Latência HTTP de /predict — p50 e p95",
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 8,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(medical_classifier_request_duration_seconds_bucket{path=\"/predict\"}[1m])) by (le))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(medical_classifier_request_duration_seconds_bucket{path=\"/predict\"}[1m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "type": "stat",
+      "id": 3,
+      "title": "Falhas internas de inferência por segundo (1 min)",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(medical_classifier_prediction_errors_total[1m])) or vector(0)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "type": "stat",
+      "id": 4,
+      "title": "Respostas HTTP 4xx/5xx em /predict (1 min)",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "(sum(rate(medical_classifier_requests_total{path=\"/predict\",status=~\"4..|5..\"}[1m])) or vector(0)) / clamp_min(sum(rate(medical_classifier_requests_total{path=\"/predict\"}[1m])), 0.000001)",
+          "refId": "A"
+        }
+      ]
+    }
   ],
   "schemaVersion": 39,
-  "tags": ["tech-challenge", "medical"],
+  "tags": [
+    "tech-challenge",
+    "medical"
+  ],
   "title": "Medical Classifier",
   "uid": "medical-classifier",
-  "version": 1
+  "version": 2
 }

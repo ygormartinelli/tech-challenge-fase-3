@@ -1,0 +1,299 @@
+{
+  "train": {
+    "rows": 11550,
+    "columns": [
+      "condition_label",
+      "medical_abstract"
+    ],
+    "dtypes": {
+      "condition_label": "int64",
+      "medical_abstract": "object"
+    },
+    "nulls": {
+      "condition_label": 0,
+      "medical_abstract": 0
+    },
+    "exact_duplicate_rows": 0,
+    "unique_texts": 9445,
+    "duplicate_text_rows_beyond_first": 2105,
+    "conflicting_text_groups": 1956,
+    "rows_in_conflicting_groups": 4061,
+    "characters": {
+      "count": 11550.0,
+      "mean": 1229.104155844156,
+      "std": 505.96098186539007,
+      "min": 170.0,
+      "1%": 311.0,
+      "5%": 441.0,
+      "50%": 1208.0,
+      "95%": 2049.0,
+      "99%": 2570.0,
+      "max": 3999.0
+    },
+    "words": {
+      "count": 11550.0,
+      "mean": 179.64060606060605,
+      "std": 76.3697757005607,
+      "min": 24.0,
+      "1%": 43.0,
+      "5%": 62.0,
+      "50%": 175.0,
+      "95%": 302.0,
+      "99%": 381.5100000000002,
+      "max": 596.0
+    },
+    "outside_api_length": 0
+  },
+  "test": {
+    "rows": 2888,
+    "columns": [
+      "condition_label",
+      "medical_abstract"
+    ],
+    "dtypes": {
+      "condition_label": "int64",
+      "medical_abstract": "object"
+    },
+    "nulls": {
+      "condition_label": 0,
+      "medical_abstract": 0
+    },
+    "exact_duplicate_rows": 0,
+    "unique_texts": 2770,
+    "duplicate_text_rows_beyond_first": 118,
+    "conflicting_text_groups": 113,
+    "rows_in_conflicting_groups": 231,
+    "characters": {
+      "count": 2888.0,
+      "mean": 1236.907894736842,
+      "std": 512.8969366050079,
+      "min": 186.0,
+      "1%": 315.0,
+      "5%": 435.0,
+      "50%": 1221.5,
+      "95%": 2053.2500000000005,
+      "99%": 2640.6500000000005,
+      "max": 3542.0
+    },
+    "words": {
+      "count": 2888.0,
+      "mean": 181.12292243767314,
+      "std": 77.26735164960526,
+      "min": 29.0,
+      "1%": 43.870000000000005,
+      "5%": 61.0,
+      "50%": 179.0,
+      "95%": 303.0,
+      "99%": 391.2600000000002,
+      "max": 528.0
+    },
+    "outside_api_length": 0
+  },
+  "classes": [
+    {
+      "label": 1,
+      "name": "neoplasms",
+      "train": 2530,
+      "test": 633,
+      "train_share": 0.21904761904761905,
+      "test_share": 0.21918282548476453,
+      "share_difference_pp": 0.01352064371454853
+    },
+    {
+      "label": 2,
+      "name": "digestive system diseases",
+      "train": 1195,
+      "test": 299,
+      "train_share": 0.10346320346320347,
+      "test_share": 0.10353185595567867,
+      "share_difference_pp": 0.006865249247520189
+    },
+    {
+      "label": 3,
+      "name": "nervous system diseases",
+      "train": 1540,
+      "test": 385,
+      "train_share": 0.13333333333333333,
+      "test_share": 0.13331024930747923,
+      "share_difference_pp": -0.0023084025854103185
+    },
+    {
+      "label": 4,
+      "name": "cardiovascular diseases",
+      "train": 2441,
+      "test": 610,
+      "train_share": 0.21134199134199133,
+      "test_share": 0.21121883656509696,
+      "share_difference_pp": -0.01231547768943686
+    },
+    {
+      "label": 5,
+      "name": "general pathological conditions",
+      "train": 3844,
+      "test": 961,
+      "train_share": 0.33281385281385284,
+      "test_share": 0.3327562326869806,
+      "share_difference_pp": -0.0057620126872215405
+    }
+  ],
+  "overlap": {
+    "test_rows_seen_in_train": 1010,
+    "test_seen_share": 0.3497229916897507,
+    "test_unseen_rows": 1878,
+    "shared_text_groups": 988,
+    "combined_unique_texts": 11227,
+    "combined_conflicting_groups": 2929,
+    "single_label_empirical_accuracy_ceiling": 0.7776007757307106,
+    "label_cooccurrence": [
+      [
+        3163,
+        204,
+        190,
+        101,
+        619
+      ],
+      [
+        204,
+        1494,
+        56,
+        68,
+        603
+      ],
+      [
+        190,
+        56,
+        1925,
+        197,
+        591
+      ],
+      [
+        101,
+        68,
+        197,
+        3051,
+        870
+      ],
+      [
+        619,
+        603,
+        591,
+        870,
+        4805
+      ]
+    ]
+  },
+  "distribution": {
+    "character_length_ks_statistic": 0.01737471669604629,
+    "character_length_ks_pvalue": 0.4829294218042238,
+    "caveat": "Textos repetidos violam independência; não é teste confirmatório de drift.",
+    "temporal_analysis": "Indisponível: não há datas, pacientes, hospitais ou origem por linha."
+  },
+  "lexical": {
+    "vocabulary_size": 20000,
+    "top_mean_tfidf_terms_by_class": {
+      "1": [
+        "patients",
+        "cancer",
+        "tumor",
+        "cell",
+        "carcinoma",
+        "tumors",
+        "cells",
+        "cases",
+        "survival",
+        "breast",
+        "treatment",
+        "disease"
+      ],
+      "2": [
+        "patients",
+        "disease",
+        "liver",
+        "hepatitis",
+        "gastric",
+        "esophageal",
+        "bowel",
+        "biliary",
+        "treatment",
+        "ulcer",
+        "patient",
+        "hepatic"
+      ],
+      "3": [
+        "patients",
+        "pain",
+        "brain",
+        "cerebral",
+        "syndrome",
+        "stroke",
+        "disease",
+        "nerve",
+        "treatment",
+        "patient",
+        "group",
+        "clinical"
+      ],
+      "4": [
+        "patients",
+        "coronary",
+        "pressure",
+        "ventricular",
+        "artery",
+        "blood",
+        "heart",
+        "hypertension",
+        "myocardial",
+        "left",
+        "cardiac",
+        "group"
+      ],
+      "5": [
+        "patients",
+        "group",
+        "treatment",
+        "disease",
+        "cases",
+        "acute",
+        "patient",
+        "years",
+        "syndrome",
+        "study",
+        "children",
+        "surgery"
+      ]
+    },
+    "train_sparsity": 0.996522922077922,
+    "test_zero_vectors": 0,
+    "test_oov_token_share": 0.03288570837745875,
+    "near_duplicates": {
+      "method": "Cosseno TF-IDF unigramas, 20000 termos, min_df=2; ajustado no treino.",
+      "unseen_test_rows_similarity_ge_090": 0,
+      "unseen_test_rows_similarity_ge_095": 0,
+      "unseen_test_similarity_quantiles": [
+        0.13603605178397093,
+        0.35249978706972307,
+        0.5172271090889836,
+        0.5759230516612994,
+        0.8135825897947432
+      ],
+      "caveat": "Similaridade lexical não prova identidade nem independência de pacientes."
+    }
+  },
+  "environment": {
+    "created_at": "2026-09-15T13:01:44.800643+00:00",
+    "python": "3.11.15",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "scikit-learn": "1.9.0",
+      "numpy": "2.4.6",
+      "pandas": "2.3.3",
+      "onnxruntime": "1.29.0",
+      "skl2onnx": "1.20.0"
+    }
+  },
+  "sources": {
+    "medical_tc_train.csv": "ad53aebc682d6b87a5647f619a079bb446d286fdc93bf0159b812418f5758609",
+    "medical_tc_test.csv": "1eecea73c9ecad292c55e10403bd139fab9580545d6878482997c5564d51ac05",
+    "medical_tc_labels.csv": "8a27ae03339c798103678efa8012f744a723ff71a80f2b2c1355ee249564adc5"
+  }
+}

@@ -1,45 +1,37 @@
-"""Medição reproduzível de latência fim a fim da API local."""
+"""Latência HTTP reproduzível com textos variados e respostas completas."""
 
 import json
+import os
 from time import perf_counter
 from urllib.request import Request, urlopen
 
 import numpy as np
+from dotenv import load_dotenv
 
-API_URL = "http://localhost:8000/predict"
-ITERATIONS = 100
-WARMUP_ITERATIONS = 10
-SAMPLE_TEXT = (
-    "Tumor cells were investigated in the patient and cancer treatment was discussed."
-)
+from techchallenge_fase3.config import Settings
+from techchallenge_fase3.data import load_dataset
+from techchallenge_fase3.reporting import environment, file_hash, write_json
+
+ITERATIONS = 200
+WARMUP_ITERATIONS = 20
 
 
-def request_prediction(url: str, text: str) -> None:
-    """Envia uma predição HTTP sem persistir dados clínicos."""
+def request_prediction(url: str, text: str) -> dict:
+    """Recebe e valida a resposta completa, sem persistir abstracts."""
     payload = json.dumps({"medical_abstract": text}).encode()
     request = Request(url, data=payload, headers={"Content-Type": "application/json"})
-    with urlopen(request, timeout=10):
-        pass
-
-
-def measure_api_latency(url: str, text: str) -> dict[str, float]:
-    """Mede a latência HTTP após aquecimento da API."""
-    for _ in range(WARMUP_ITERATIONS):
-        request_prediction(url, text)
-    durations = [_request_duration(url, text) for _ in range(ITERATIONS)]
-    return summarize_durations(durations)
-
-
-def _request_duration(url: str, text: str) -> float:
-    """Mede uma requisição HTTP em segundos."""
-    started_at = perf_counter()
-    request_prediction(url, text)
-    return perf_counter() - started_at
+    with urlopen(request, timeout=10) as response:
+        result = json.load(response)
+        if result.get("condition_label") not in range(1, 6):
+            raise ValueError("API returned an invalid prediction")
+        return result
 
 
 def summarize_durations(durations: list[float]) -> dict[str, float]:
-    """Consolida duração média, percentis e throughput."""
+    """Consolida latência; throughput é sequencial, não teste de saturação."""
     values = np.asarray(durations)
+    if len(values) == 0 or not np.isfinite(values).all() or (values <= 0).any():
+        raise ValueError("Durations must be finite and positive")
     return {
         "mean_ms": float(values.mean() * 1_000),
         "p50_ms": float(np.percentile(values, 50) * 1_000),
@@ -48,9 +40,40 @@ def summarize_durations(durations: list[float]) -> dict[str, float]:
     }
 
 
+def measure_api_latency(url: str, texts: list[str], variant: str) -> dict[str, float]:
+    """Mantém o corpus e valida a variante em todas as chamadas medidas."""
+    for text in texts[:WARMUP_ITERATIONS]:
+        request_prediction(url, text)
+    durations = []
+    for text in texts:
+        start = perf_counter()
+        result = request_prediction(url, text)
+        durations.append(perf_counter() - start)
+        if result["model_variant"] != variant:
+            raise ValueError("Model variant changed during benchmark")
+    return summarize_durations(durations)
+
+
 def main() -> None:
-    """Imprime o relatório de latência HTTP em JSON."""
-    print(json.dumps(measure_api_latency(API_URL, SAMPLE_TEXT), indent=2))
+    """Grava um relatório por variante que efetivamente está em execução."""
+    load_dotenv()
+    settings = Settings()
+    base = f"http://127.0.0.1:{os.getenv('API_PORT', '8000')}"
+    with urlopen(base + "/health", timeout=10) as response:
+        variant = json.load(response)["model_variant"]
+    data = load_dataset(settings.test_path)
+    texts = data.sample(n=ITERATIONS, random_state=42).medical_abstract.tolist()
+    report = {
+        "environment": environment(),
+        "variant": variant,
+        "seed": 42,
+        "iterations": ITERATIONS,
+        "warmup_iterations": WARMUP_ITERATIONS,
+        "test_sha256": file_hash(settings.test_path),
+        "latency": measure_api_latency(base + "/predict", texts, variant),
+    }
+    write_json(settings.report_dir / f"http_{variant}.json", report)
+    print(json.dumps(report["latency"], indent=2))
 
 
 if __name__ == "__main__":

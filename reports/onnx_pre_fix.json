@@ -1,0 +1,18 @@
+{
+  "status": "rejected_before_tokenizer_alignment",
+  "created_at": "2026-09-15T13:04:59.163845+00:00",
+  "test_rows": 2888,
+  "label_mismatches": 22,
+  "max_probability_absolute_error": 0.1265002824992485,
+  "original_token_pattern": "(?u)\\b\\w\\w+\\b",
+  "converted_token_pattern": "[a-zA-Z0-9_]+",
+  "original_sha256": "0008b4508c7237359b319b2525106c400fe73ea93d10df61d016b3b4eea43e5f",
+  "onnx_sha256": "bb9ac37c8c060e356ce506125178282754175c954fd35238d0fdca2e5f9ad7bf",
+  "test_sha256": "1eecea73c9ecad292c55e10403bd139fab9580545d6878482997c5564d51ac05",
+  "intermediate_checks": {
+    "aligned_tokenizer_with_sublinear_tf": {"label_mismatches": 4, "max_probability_absolute_error": 0.02361423765142656},
+    "aligned_tokenizer_without_sublinear_tf": {"label_mismatches": 0, "max_probability_absolute_error": 0.01342810392376459},
+    "vectorizer_investigation": "Quatro linhas ainda diferiam na vetorização. Na linha 2033 do teste (índice zero), tokens intermediários idênticos, mas o bigrama delta f508 tinha peso zero no ONNX e 0.1565340154881248 no original."
+  },
+  "decision": "Usar unigramas, TF linear e tokenização ASCII explícita para manter implementação simples e exportável. Retreinar e repetir a aceitação completa; não relaxar tolerância para esconder divergências."
+}

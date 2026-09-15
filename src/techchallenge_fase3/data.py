@@ -1,5 +1,8 @@
 """Leitura e validação do contrato de dados."""
 
+import hashlib
+import re
+import unicodedata
 from pathlib import Path
 
 import pandas as pd
@@ -37,9 +40,34 @@ def validate_dataset(dataset: pd.DataFrame) -> None:
         raise ValueError("Dataset must contain non-null medical abstracts")
     if dataset["condition_label"].isna().any():
         raise ValueError("Dataset must contain non-null labels")
+    texts = dataset["medical_abstract"]
+    if not texts.map(
+        lambda value: isinstance(value, str) and bool(value.strip())
+    ).all():
+        raise ValueError("Medical abstracts must be non-blank strings")
+    labels = dataset["condition_label"]
+    if not pd.api.types.is_integer_dtype(labels) or not labels.isin(LABEL_NAMES).all():
+        raise ValueError("Labels must be integers from 1 to 5")
 
 
 def load_label_names(path: Path) -> dict[int, str]:
     """Carrega o mapeamento de rótulos para nomes de categorias."""
     labels = pd.read_csv(path)
-    return dict(zip(labels["condition_label"], labels["condition_name"], strict=True))
+    mapping = dict(
+        zip(labels["condition_label"], labels["condition_name"], strict=True)
+    )
+    if len(labels) != 5 or mapping != LABEL_NAMES:
+        raise ValueError("Label catalogue does not match the five supported categories")
+    return mapping
+
+
+def text_key(text: str) -> str:
+    """Identifica textos equivalentes sem expor o conteúdo nos relatórios."""
+    normalized = unicodedata.normalize("NFKC", text).casefold()
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def text_groups(dataset: pd.DataFrame) -> pd.Series:
+    """Agrupa abstracts por Unicode, caixa e espaços normalizados."""
+    return dataset["medical_abstract"].map(text_key)

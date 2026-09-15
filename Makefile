@@ -1,31 +1,40 @@
-.PHONY: install lint test train optimize benchmark api-benchmark run compose airflow
+.PHONY: install lint test validate eda notebook train optimize evaluate benchmark publish pipeline run compose airflow smoke api-benchmark
 
 install:
-	uv sync --all-groups
+	uv sync --frozen --all-groups
 
 lint:
-	uv run ruff check .
+	uv run --frozen ruff check .
+	uv run --frozen ruff format --check .
 
 test:
-	uv run pytest
+	uv run --frozen pytest
 
-train:
-	uv run python -m techchallenge_fase3.pipelines.train
+validate eda train optimize evaluate benchmark publish:
+	uv run --frozen python -m techchallenge_fase3.pipelines.$@
 
-optimize:
-	uv run python -m techchallenge_fase3.pipelines.optimize
+pipeline:
+	$(MAKE) validate
+	$(MAKE) train
+	$(MAKE) optimize
+	$(MAKE) evaluate
+	$(MAKE) benchmark
+	$(MAKE) publish
 
-benchmark:
-	uv run python -m techchallenge_fase3.pipelines.benchmark
-
-api-benchmark:
-	uv run python -m techchallenge_fase3.pipelines.api_benchmark
+notebook:
+	uv run --frozen python scripts/build_notebook.py
 
 run:
-	uv run uvicorn techchallenge_fase3.api.main:app --reload
+	uv run --frozen uvicorn techchallenge_fase3.api.main:app --host 127.0.0.1
 
 compose:
-	docker compose -f docker/docker-compose.yml up --build
+	docker compose --env-file .env -f docker/docker-compose.yml up --build -d --wait
 
 airflow:
-	docker compose -f docker/docker-compose.yml --profile airflow up --build
+	docker compose --env-file .env -f docker/docker-compose.yml --profile airflow up --build -d --wait
+
+smoke:
+	uv run --frozen python scripts/verify_stack.py
+
+api-benchmark:
+	uv run --frozen python -m techchallenge_fase3.pipelines.api_benchmark

@@ -1,116 +1,104 @@
-"""API FastAPI para classificação de resumos médicos."""
+"""API educacional com inferência única, readiness e falhas seguras."""
 
-from time import perf_counter
+import logging
+from threading import Lock
 from typing import Any
 
 import numpy as np
 from fastapi import FastAPI, HTTPException, Request
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from starlette.responses import Response
 
-from techchallenge_fase3.artifacts import load_predictor
+from techchallenge_fase3.api.metrics import Metrics
+from techchallenge_fase3.artifacts import Predictor, load_predictor
 from techchallenge_fase3.config import Settings
 from techchallenge_fase3.data import LABEL_NAMES
 
-REQUESTS = Counter(
-    "medical_classifier_requests_total",
-    "Total de requisições HTTP recebidas.",
-    ["method", "path", "status"],
-)
-LATENCY = Histogram(
-    "medical_classifier_request_duration_seconds",
-    "Duração das requisições HTTP em segundos.",
-    ["method", "path"],
-)
-ERRORS = Counter(
-    "medical_classifier_prediction_errors_total",
-    "Total de falhas durante inferências.",
-)
 DISCLAIMER = "Educational use only; not for clinical diagnosis, triage, or treatment."
+LOGGER = logging.getLogger(__name__)
 
 
 class PredictionRequest(BaseModel):
-    """Payload de classificação."""
+    """Rejeita campos inesperados, valores não textuais e espaços vazios."""
 
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, strict=True)
     medical_abstract: str = Field(min_length=10, max_length=20_000)
 
 
 class PredictionResponse(BaseModel):
-    """Resposta segura da classificação."""
+    """Confiança numérica do modelo, não uma probabilidade clínica calibrada."""
 
-    condition_label: int
+    condition_label: int = Field(ge=1, le=5)
     condition_name: str
-    confidence: float
+    confidence: float = Field(ge=0, le=1)
     model_variant: str
     disclaimer: str = DISCLAIMER
 
 
 def create_app() -> FastAPI:
-    """Cria a aplicação FastAPI instrumentada."""
+    """Constrói instâncias isoladas e testáveis da aplicação."""
     application = FastAPI(title="Medical Text Category Classifier", version="0.1.0")
-    _add_routes(application)
-    return application
-
-
-def _add_routes(application: FastAPI) -> None:
-    """Registra as rotas públicas da API."""
+    application.state.metrics = Metrics()
+    application.state.load_lock = Lock()
     application.get("/health")(_health)
     application.get("/metrics")(_metrics)
     application.post("/predict", response_model=PredictionResponse)(_predict)
     application.middleware("http")(_record_metrics)
+    return application
 
 
 async def _record_metrics(request: Request, call_next: Any) -> Response:
-    """Registra contagem, estado e duração de cada requisição."""
-    started_at = perf_counter()
-    response = await call_next(request)
-    path = request.url.path
-    LATENCY.labels(request.method, path).observe(perf_counter() - started_at)
-    REQUESTS.labels(request.method, path, response.status_code).inc()
-    return response
+    """Registra também respostas de erro e limita a cardinalidade das rotas."""
+    return await request.app.state.metrics.record(request, call_next)
 
 
 def _health(request: Request) -> dict[str, str]:
-    """Informa se o artefato de modelo está disponível."""
-    _get_service(request)
-    return {"status": "ok"}
+    """Retorna 503 se os artefatos não puderem ser carregados."""
+    try:
+        _, variant = _get_service(request)
+        return {"status": "ok", "model_variant": variant}
+    except Exception as error:
+        raise _unavailable(error) from error
 
 
-def _metrics() -> Response:
-    """Expõe métricas no formato Prometheus."""
-    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+def _metrics(request: Request) -> Response:
+    """Expõe apenas o registro Prometheus desta instância."""
+    return request.app.state.metrics.response()
 
 
 def _predict(payload: PredictionRequest, request: Request) -> PredictionResponse:
-    """Classifica um resumo médico sem alegar decisão clínica."""
+    """Classifica sem registrar abstracts e sem alegar decisão clínica."""
     try:
-        predictor, labels, variant = _get_service(request)
-        label = int(predictor.predict([payload.medical_abstract])[0])
-        probabilities = predictor.predict_proba([payload.medical_abstract])[0]
-        confidence = float(np.max(probabilities))
+        predictor, variant = _get_service(request)
+        labels, probabilities = predictor.predict_batch([payload.medical_abstract])
+        if probabilities.shape != (1, 5) or not np.isfinite(probabilities).all():
+            raise ValueError("Invalid probability output")
+        label = int(labels[0])
         return PredictionResponse(
             condition_label=label,
-            condition_name=labels[label],
-            confidence=confidence,
+            condition_name=LABEL_NAMES[label],
+            confidence=float(probabilities.max()),
             model_variant=variant,
         )
-    except (KeyError, OSError, ValueError) as error:
-        ERRORS.inc()
-        raise HTTPException(status_code=503, detail="Model unavailable") from error
+    except Exception as error:
+        request.app.state.metrics.errors.inc()
+        raise _unavailable(error) from error
 
 
-def _get_service(request: Request) -> tuple[Any, dict[int, str], str]:
-    """Carrega o modelo e o catálogo uma vez por processo."""
-    if not hasattr(request.app.state, "service"):
-        settings = Settings()
-        predictor, variant = load_predictor(settings.model_dir, settings.model_variant)
-        request.app.state.service = (
-            predictor,
-            LABEL_NAMES,
-            variant,
-        )
-    return request.app.state.service
+def _unavailable(error: Exception) -> HTTPException:
+    """Não expõe caminhos, conteúdo clínico ou detalhes internos ao cliente."""
+    LOGGER.error("Model unavailable (%s)", type(error).__name__)
+    return HTTPException(status_code=503, detail="Model unavailable")
+
+
+def _get_service(request: Request) -> tuple[Predictor, str]:
+    """Carrega uma release por processo; restart adota a próxima publicação."""
+    state = request.app.state
+    with state.load_lock:
+        if not hasattr(state, "service"):
+            settings = Settings()
+            state.service = load_predictor(settings.model_dir, settings.model_variant)
+    return state.service
 
 
 app = create_app()

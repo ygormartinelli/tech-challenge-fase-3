@@ -1,20 +1,27 @@
+FROM ghcr.io/astral-sh/uv:0.11.8 AS uv
 FROM apache/airflow:2.10.5-python3.11
 
 USER root
+COPY --from=uv /uv /usr/local/bin/uv
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends locales \
     && sed --in-place '/en_US.UTF-8/s/^# //g' /etc/locale.gen \
     && locale-gen \
-    && rm --recursive --force /var/lib/apt/lists/*
+    && rm --recursive --force /var/lib/apt/lists/* \
+    && mkdir -p /opt/project && chown airflow:0 /opt/project
 
-COPY pyproject.toml README.md /opt/project/
-COPY src /opt/project/src
-
+COPY --chown=airflow:0 pyproject.toml uv.lock README.md /opt/project/
+COPY --chown=airflow:0 src /opt/project/src
 USER airflow
-RUN pip install --no-cache-dir /opt/project
+WORKDIR /opt/project
+ENV UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
+RUN uv sync --frozen --no-dev --group build --no-install-project --python /usr/local/bin/python \
+    && uv sync --frozen --no-dev --group build --no-build-isolation --no-editable --python /usr/local/bin/python \
+    && uv pip check --python /opt/project/.venv/bin/python \
+    && pip check
 
 COPY --chown=airflow:0 dags /opt/airflow/dags
-ENV DATA_DIR=/opt/project/data/raw \
-    MODEL_DIR=/opt/project/models \
-    LANG=en_US.UTF-8 \
-    LC_ALL=en_US.UTF-8
+ENV DATA_DIR=/opt/project/data/raw MODEL_DIR=/opt/project/models \
+    REPORT_DIR=/opt/airflow/reports/runtime/airflow CANDIDATE_NAME=airflow-candidate \
+    LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+WORKDIR /opt/airflow

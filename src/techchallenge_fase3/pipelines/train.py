@@ -1,29 +1,23 @@
 """Comando para treinar e persistir o modelo original."""
 
-import json
-from pathlib import Path
-
 from techchallenge_fase3.artifacts import save_original
 from techchallenge_fase3.config import Settings
 from techchallenge_fase3.data import load_dataset
-from techchallenge_fase3.modeling import evaluate_model, train_model
+from techchallenge_fase3.modeling import train_model, validate_baseline
+from techchallenge_fase3.reporting import environment, file_hash, write_json
 
 
 def main() -> None:
     """Treina o classificador e registra métricas no diretório de relatórios."""
     settings = Settings()
     train_data = load_dataset(settings.train_path)
-    test_data = load_dataset(settings.test_path)
+    report = validate_baseline(train_data)
+    report["environment"] = environment()
+    report["train_sha256"] = file_hash(settings.train_path)
     model = train_model(train_data)
-    save_original(model, settings.model_dir)
-    report_path = _report_path()
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps(evaluate_model(model, test_data), indent=2))
-
-
-def _report_path() -> Path:
-    """Retorna o nome do relatório de avaliação."""
-    return Path("reports/evaluation.json")
+    save_original(model, settings.candidate_dir)
+    write_json(settings.report_dir / "validation.json", report)
+    print("Baseline validated; candidate trained without test-set fitting.")
 
 
 if __name__ == "__main__":
