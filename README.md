@@ -221,7 +221,7 @@ Arquitetura proposta: cliente autenticado → balanceador HTTPS → serviço Fas
 | Airflow | 15% | DAG com seis etapas e registro do scheduler |
 | Monitoramento | 20% | Compose, dashboard JSON com quatro painéis e consultas verificadas |
 | README | 15% | Execução, decisão arquitetural, contrato, adaptação e limitações |
-| Vídeo STAR | 15% | Roteiro abaixo; gravação e link ainda dependem do autor |
+| Vídeo STAR | 15% | [Apresentação gravada no YouTube](https://youtu.be/OD5OPH1H4IU); roteiro de referência abaixo |
 
 Roteiro de **4min50s**, deixando 10 segundos de margem:
 
@@ -236,9 +236,9 @@ Roteiro de **4min50s**, deixando 10 segundos de margem:
 | 4:05–4:45 | Result | Mostrar redução local de 95,2% no p50, paridade em 606 entradas, 51 testes e três jobs da CI. Separar inferência de HTTP e reforçar a ausência de validade clínica. |
 | 4:45–4:50 | Encerramento | Agradecer e apresentar o endereço do repositório. |
 
-**Apresentação:** [PPT atualizado de urgência sintética](docs/presentation/Tech_Challenge_Fase3_STAR_Urgencia.pptx), com oito slides, o design anterior preservado, prints reais da API, Airflow e Grafana e falas STAR nas notas do apresentador. As notas identificam as fontes e os limites dos resultados. Use esta versão na gravação, não o PPT anterior de categorias. [Prévia dos slides](docs/presentation/preview_urgencia.png).
+**Apresentação:** [PPT atualizado de urgência sintética](docs/presentation/Tech_Challenge_Fase3_STAR_Urgencia.pptx), com oito slides, o design anterior preservado, prints reais da API, Airflow e Grafana e falas STAR nas notas do apresentador. As notas identificam as fontes e os limites dos resultados. Esta é a versão de apoio ao vídeo, em substituição ao PPT anterior de categorias. [Prévia dos slides](docs/presentation/preview_urgencia.png).
 
-**Vídeo:** ainda não gravado; gravação e publicação do link dependem do autor. O tempo indicado é uma meta de ensaio, não a duração de uma gravação já realizada.
+**Vídeo da apresentação:** [Assistir ao Tech Challenge Fase 3 no YouTube](https://youtu.be/OD5OPH1H4IU). Gravação concluída pelo autor. Os tempos do roteiro acima são referências de planejamento, não uma medição da duração do vídeo.
 
 ## Resolução de problemas e encerramento
 
