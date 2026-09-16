@@ -1,5 +1,11 @@
 # Tech Challenge Fase 3 — urgência em laudos sintéticos
 
+## Apresentação em vídeo
+
+**[Assistir à apresentação do projeto no YouTube](https://youtu.be/OD5OPH1H4IU)**
+
+## Sobre o projeto
+
 API de **demonstração acadêmica** que recebe um texto e classifica `normal`, `atenção` ou `urgente`, com TF-IDF + LogisticRegression, FastAPI, Docker, ONNX Runtime, Prometheus, Grafana, Airflow e GitHub Actions.
 
 > Treinada exclusivamente com dados sintéticos. Não utilizar para triagem clínica, diagnóstico ou tratamento de pacientes. A confiança não é uma probabilidade de risco clínico. Não enviar dados de pacientes reais.
@@ -212,7 +218,7 @@ Para uma futura API validada, a escolha proposta é **inferência real-time em A
 
 Arquitetura proposta: cliente autenticado → balanceador HTTPS → serviço FastAPI no ECS/Fargate; imagem no ECR, artefatos versionados em S3 e retreino separado. Essa topologia é uma decisão de projeto, **não algo provisionado ou validado neste trabalho**. A passagem à produção exigiria autorização clínica, governança dos dados, controle de acesso, criptografia, observabilidade, revisão de segurança, teste de carga, política de atualização e custos. Não há benefício assistencial medido nem SLA comprovado.
 
-## Rubrica e roteiro STAR
+## Rubrica e evidências
 
 | Critério | Peso | Evidência / limite |
 |---|---:|---|
@@ -221,24 +227,7 @@ Arquitetura proposta: cliente autenticado → balanceador HTTPS → serviço Fas
 | Airflow | 15% | DAG com seis etapas e registro do scheduler |
 | Monitoramento | 20% | Compose, dashboard JSON com quatro painéis e consultas verificadas |
 | README | 15% | Execução, decisão arquitetural, contrato, adaptação e limitações |
-| Vídeo STAR | 15% | [Apresentação gravada no YouTube](https://youtu.be/OD5OPH1H4IU); roteiro de referência abaixo |
-
-Roteiro de **4min50s**, deixando 10 segundos de margem:
-
-| Tempo | STAR | Fala e evidência a mostrar |
-|---|---|---|
-| 0:00–0:35 | Situation | Explicar o requisito de urgência, a ausência desse alvo no corpus sugerido e a adaptação sintética autorizada. Mostrar o aviso de uso acadêmico. |
-| 0:35–1:05 | Task | Apresentar a API com três níveis, stack local em Docker e arquitetura AWS apenas proposta, sem deploy. |
-| 1:05–1:50 | Action | Explicar 75 cenários, 2.700/600 redações e separação por cenário. Mostrar 22/30 acertos, macro-F1 0,738 e três urgentes classificados como atenção. |
-| 1:50–2:35 | Action | Mostrar a resposta real do Swagger a um texto fictício: urgência, variante, origem sintética e disclaimer. Explicar Factory/Strategy e bloqueio do modelo antigo. |
-| 2:35–3:20 | Action | Mostrar o run Airflow de urgência com seis tarefas concluídas. Explicar publicação após o gate, preservação da release anterior e restart da API. |
-| 3:20–4:05 | Result | Mostrar o Grafana com tráfego sintético e quatro painéis. Distinguir erros operacionais de erros de classificação. |
-| 4:05–4:45 | Result | Mostrar redução local de 95,2% no p50, paridade em 606 entradas, 51 testes e três jobs da CI. Separar inferência de HTTP e reforçar a ausência de validade clínica. |
-| 4:45–4:50 | Encerramento | Agradecer e apresentar o endereço do repositório. |
-
-**Apresentação:** [PPT atualizado de urgência sintética](docs/presentation/Tech_Challenge_Fase3_STAR_Urgencia.pptx), com oito slides, o design anterior preservado, prints reais da API, Airflow e Grafana e falas STAR nas notas do apresentador. As notas identificam as fontes e os limites dos resultados. Esta é a versão de apoio ao vídeo, em substituição ao PPT anterior de categorias. [Prévia dos slides](docs/presentation/preview_urgencia.png).
-
-**Vídeo da apresentação:** [Assistir ao Tech Challenge Fase 3 no YouTube](https://youtu.be/OD5OPH1H4IU). Gravação concluída pelo autor. Os tempos do roteiro acima são referências de planejamento, não uma medição da duração do vídeo.
+| Vídeo STAR | 15% | [Apresentação gravada no YouTube](https://youtu.be/OD5OPH1H4IU) |
 
 ## Resolução de problemas e encerramento
 
