@@ -227,15 +227,18 @@ Roteiro de **4min50s**, deixando 10 segundos de margem:
 
 | Tempo | STAR | Fala e evidência a mostrar |
 |---|---|---|
-| 0:00–0:40 | Situation | “O enunciado propõe classificar urgência em laudos. O corpus sugerido tem doenças, não urgência. Adaptamos com dados sintéticos explicitamente identificados; não é triagem clínica.” Mostrar o aviso do README. |
-| 0:40–1:15 | Task | “Entregar uma API com três níveis e comprovar CI/CD, retreino, monitoramento e ganho de latência.” Mostrar estrutura e issue #8. |
-| 1:15–2:00 | Action | Explicar 75 cenários, 2.700/600 redações, separação por cenário e TF-IDF + regressão logística. Mostrar EDA e matriz de erros. |
-| 2:00–2:40 | Action | Enviar texto fictício em `/docs`; mostrar urgência, variante e disclaimer. Apresentar brevemente Factory/Strategy e proteção contra releases antigas. |
-| 2:40–3:30 | Action | Mostrar run Airflow com seis tarefas e checks do GitHub Actions; explicar publicação após o gate e restart da API. |
-| 3:30–4:15 | Result | Mostrar Grafana com tráfego e relatório de latência. Explicar a diferença entre inferência isolada e HTTP, equivalência ONNX e ausência de quantização. |
-| 4:15–4:50 | Result | “O ciclo técnico funciona. No teste sintético, 22/30 cenários corretos e três urgentes subestimados. Não há validade clínica; dados reais anotados e validação externa seriam necessários.” Encerrar com aprendizados e proposta AWS, não deploy. |
+| 0:00–0:35 | Situation | Explicar o requisito de urgência, a ausência desse alvo no corpus sugerido e a adaptação sintética autorizada. Mostrar o aviso de uso acadêmico. |
+| 0:35–1:05 | Task | Apresentar a API com três níveis, stack local em Docker e arquitetura AWS apenas proposta, sem deploy. |
+| 1:05–1:50 | Action | Explicar 75 cenários, 2.700/600 redações e separação por cenário. Mostrar 22/30 acertos, macro-F1 0,738 e três urgentes classificados como atenção. |
+| 1:50–2:35 | Action | Mostrar a resposta real do Swagger a um texto fictício: urgência, variante, origem sintética e disclaimer. Explicar Factory/Strategy e bloqueio do modelo antigo. |
+| 2:35–3:20 | Action | Mostrar o run Airflow de urgência com seis tarefas concluídas. Explicar publicação após o gate, preservação da release anterior e restart da API. |
+| 3:20–4:05 | Result | Mostrar o Grafana com tráfego sintético e quatro painéis. Distinguir erros operacionais de erros de classificação. |
+| 4:05–4:45 | Result | Mostrar redução local de 95,2% no p50, paridade em 606 entradas, 51 testes e três jobs da CI. Separar inferência de HTTP e reforçar a ausência de validade clínica. |
+| 4:45–4:50 | Encerramento | Agradecer e apresentar o endereço do repositório. |
 
-**Vídeo:** ainda não gravado. O PPT local anterior descreve cinco categorias e está desatualizado; não deve ser usado como evidência desta versão. O roteiro acima é o material atualizado para a gravação.
+**Apresentação:** [PPT atualizado de urgência sintética](docs/presentation/Tech_Challenge_Fase3_STAR_Urgencia.pptx), com oito slides, o design anterior preservado, prints reais da API, Airflow e Grafana e falas STAR nas notas do apresentador. As notas identificam as fontes e os limites dos resultados. Use esta versão na gravação, não o PPT anterior de categorias. [Prévia dos slides](docs/presentation/preview_urgencia.png).
+
+**Vídeo:** ainda não gravado; gravação e publicação do link dependem do autor. O tempo indicado é uma meta de ensaio, não a duração de uma gravação já realizada.
 
 ## Resolução de problemas e encerramento
 
