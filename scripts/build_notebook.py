@@ -1,4 +1,4 @@
-"""Gera e executa a EDA auditável com tabelas, gráficos e conclusões."""
+"""Constrói e executa a EDA da simulação, com gráficos e trilha de auditoria."""
 # ruff: noqa: E501
 
 import subprocess
@@ -13,242 +13,217 @@ ROOT = Path(__file__).resolve().parents[1]
 CELLS = [
     (
         "md",
-        """# EDA — Medical Abstracts, Fase 3
+        """# EDA — urgência sintética, Fase 3
+
+## tl;dr
+
+**Demonstração acadêmica, não validação clínica.** O corpus sugerido não possui urgência. Com autorização do responsável, criamos 75 cenários fictícios nos seus cinco temas, com os rótulos pedagógicos `normal`, `atenção` e `urgente`. Não convertemos doença em urgência nem copiamos abstracts para o treino.
+
+A expansão produz 2.700 linhas de treino e 600 de teste, mas apenas **45 + 30 cenários distintos**. Não são 3.300 amostras clínicas independentes. Não há cenários ou textos normalizados compartilhados entre as partições. O teste reservado apresentou 22/30 cenários corretos, macro-F1 0,738; três cenários urgentes foram classificados como atenção. O desempenho não autoriza triagem de pacientes.
 
 ## Contexto e métodos
 
-Objetivo: avaliar se o corpus sustenta o classificador educacional de **cinco categorias** e orientar as issues #1–#7. O grão é uma associação **abstract–categoria**, não um paciente único. Não há rótulo de urgência.
+Leitor: autor e avaliadores do Tech Challenge. Decisão: verificar a adaptação de alvo e os limites antes da entrega técnica. Esta análise substitui a EDA operacional anterior de cinco doenças, preservada no histórico Git.
 
-### Premissas e fontes
+### Premissas
 
-Os CSVs locais são a fonte de verdade. Referência: [corpus dos autores](https://github.com/sebischair/Medical-Abstracts-TC-Corpus), com licença publicada CC BY-SA 3.0. As contagens coincidem; os hashes abaixo identificam os arquivos analisados. Não há datas, hospitais, pacientes ou informações demográficas para avaliar temporalidade, representatividade ou equidade. Abstracts não são redistribuídos neste notebook.
+- Fonte temática: [Medical Abstracts TC Corpus](https://github.com/sebischair/Medical-Abstracts-TC-Corpus). Os CSVs originais em `data/raw` não foram alterados.
+- Fonte efetiva: `src/techchallenge_fase3/synthetic_cases.py` e gerador `pipelines/generate.py`; não houve anotação clínica especializada.
+- Cada tema tem cinco achados por urgência. Seed 42 separa três para treino e dois para teste **antes** da expansão. Prefixos e sufixos neutros são comuns às classes, não regras de urgência.
+- 60 variações por cenário de treino; 20 por cenário de teste. Isso atende uma contagem de linhas, não diversidade clínica. A aceitação dessa adaptação cabe à avaliação acadêmica.
+- Validação: primeiro fold do StratifiedGroupKFold(5), por `scenario_id`; não são cinco treinos de validação cruzada. Pipeline fixo, sem ajuste pelo teste.
+- TF-IDF unigramas + regressão logística balanceada. Somente `report_text` entra no modelo; IDs, tema e origem não são features. Tokenização ASCII é compartilhada com ONNX; termos acentuados são fragmentados. Negações e relações clínicas não são compreendidas semanticamente.
 
-Grupos textuais: Unicode NFKC, casefold e espaços normalizados. Conflitos são preservados, sem votar ou escolher uma categoria arbitrária. TF-IDF é ajustado somente no treino. Validação: primeiro fold estratificado por grupos, aproximadamente 80/20, seed 42; **não é uma validação cruzada de cinco modelos**. O teste já havia sido avaliado na implementação anterior e não é um holdout cego. Seus rótulos não selecionam hiperparâmetros.
-
-Reprodução: `uv sync --frozen --all-groups` e `make notebook`. Tudo abaixo é recalculado em kernel limpo usando os módulos testados do projeto.""",
+Reprodução: `make generate`, `make eda`, `make notebook`. Kernel limpo, seed fixa, hashes e versões registrados abaixo. As métricas são recalculadas, não apenas lidas de relatórios antigos.""",
     ),
     (
         "code",
         """from pathlib import Path
-import sys
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from IPython.display import Markdown, display
 
-ROOT = Path.cwd() if (Path.cwd() / 'pyproject.toml').exists() else Path.cwd().parent
-sys.path.insert(0, str(ROOT / 'src'))
 from techchallenge_fase3.analysis import describe_corpus
-from techchallenge_fase3.data import load_dataset, load_label_names, text_groups
-from techchallenge_fase3.modeling import validate_baseline, train_model, evaluate_model, test_partitions
+from techchallenge_fase3.config import Settings
+from techchallenge_fase3.data import LABEL_NAMES, load_dataset, validate_splits
+from techchallenge_fase3.modeling import evaluate_model, scenario_evaluation, train_model, validate_baseline
 from techchallenge_fase3.reporting import environment, file_hash
 
-train = load_dataset(ROOT / 'data/raw/medical_tc_train.csv')
-test = load_dataset(ROOT / 'data/raw/medical_tc_test.csv')
-labels = load_label_names(ROOT / 'data/raw/medical_tc_labels.csv')
+settings = Settings()
+train = load_dataset(settings.train_path)
+test = load_dataset(settings.test_path)
+validate_splits(train, test)
 eda = describe_corpus(train, test)
-validation = validate_baseline(train)
-model = train_model(train)
-evaluation = {name: evaluate_model(model, data) if len(data) else None
-              for name, data in test_partitions(train, test).items()}
-plt.rcParams.update({'figure.figsize': (10, 5), 'font.size': 11,
-                     'axes.spines.top': False, 'axes.spines.right': False})
-COLORS = {'Treino': '#245A81', 'Teste': '#C07828'}
-NAMES = ['Neoplasias', 'Sistema digestivo', 'Sistema nervoso', 'Cardiovasculares', 'Condições gerais']
-FIGURES = ROOT / 'reports/figures'
-FIGURES.mkdir(parents=True, exist_ok=True)
+names = list(LABEL_NAMES.values())
+colors = ['#227C9D', '#D99B23', '#B44747']
+figure_dir = Path('reports/figures')
+figure_dir.mkdir(parents=True, exist_ok=True)
+pd.set_option('display.max_colwidth', 80)
+plt.rcParams.update({'figure.figsize': (9, 4.5), 'font.size': 11, 'axes.spines.top': False, 'axes.spines.right': False})
 
-def show_figure(name):
+def save_figure(name):
     plt.tight_layout()
-    plt.savefig(FIGURES / f'{name}.png', dpi=150, bbox_inches='tight')
+    plt.savefig(figure_dir / f'{name}.png', dpi=150, bbox_inches='tight')
     plt.show()
     plt.close()
 """,
     ),
     (
-        "code",
-        """display(Markdown(f'''## Resumo executivo
+        "md",
+        """## Dados
 
-- **{len(train):,} linhas de treino e {len(test):,} de teste**, sem nulos; {eda['overlap']['combined_unique_texts']:,} textos normalizados únicos no corpus combinado.
-- **{eda['overlap']['test_rows_seen_in_train']:,} linhas de teste ({eda['overlap']['test_seen_share']:.2%}) repetem textos de treino**. O teste fornecido não mede apenas generalização a textos inéditos.
-- **{eda['overlap']['combined_conflicting_groups']:,} grupos têm mais de uma categoria**. Isso é compatível com ambiguidade/múltiplos temas, mas a causa da anotação não pode ser estabelecida por esses campos.
-- Macro-F1 na validação por grupos: **{validation['model']['macro_f1']:.4f}**; majoritário: **{validation['majority_baseline']['macro_f1']:.4f}**.
-- Macro-F1 no teste completo: **{evaluation['supplied_test']['macro_f1']:.4f}**; nas **{evaluation['unseen_texts']['rows']:,} linhas de textos inéditos**: **{evaluation['unseen_texts']['macro_f1']:.4f}**. Populações diferentes não representam uma melhoria causal do modelo.
+### Proveniência e contrato
 
-**Decisão:** prosseguir com o baseline leve e a API categórica, preservando conflitos e relatando grupos, classes e população inédita separadamente. Não prometer uso clínico.'''))
-""",
+Grão de cada linha: uma redação de um cenário fictício. `scenario_id` identifica sua família; `urgency_label` é o alvo pedagógico. Não há pacientes, hospitais, datas de eventos, dados demográficos ou desfechos reais. Datas de execução medem apenas a produção do artefato.""",
     ),
-    ("md", "## Dados e qualidade"),
     (
         "code",
-        """display(pd.DataFrame([{'arquivo': path.name, 'bytes': path.stat().st_size, 'sha256': file_hash(path)}
-                      for path in sorted((ROOT / 'data/raw').glob('medical_tc_*.csv'))]))
-keys = ['rows', 'unique_texts', 'exact_duplicate_rows', 'duplicate_text_rows_beyond_first',
-        'conflicting_text_groups', 'rows_in_conflicting_groups', 'outside_api_length']
-display(pd.DataFrame([{key: eda[split][key] for key in keys} for split in ['train','test']], index=['Treino','Teste']))
-display(pd.DataFrame({'tipo': train.dtypes.astype(str), 'nulos_treino': train.isna().sum(), 'nulos_teste': test.isna().sum()}))
-assert len(train) == train.condition_label.value_counts().sum()
-assert len(test) == sum(row['test'] for row in eda['classes'])
-assert validation['shared_text_groups'] == 0
+        """display(pd.DataFrame([{'arquivo': p.as_posix(), 'sha256': file_hash(p)} for p in (settings.train_path, settings.test_path, settings.labels_path)]))
+display(pd.DataFrame([{'partição': name, 'linhas': eda[name]['rows'], 'cenários': eda['scenarios'][name], 'nulos': sum(eda[name]['nulls'].values()), 'textos repetidos': eda[name]['duplicate_text_rows_beyond_first'], 'conflitos de rótulo': eda[name]['conflicting_text_groups'], 'fora do limite API': eda[name]['outside_api_length']} for name in ('train', 'test')]))
+assert eda['scenarios']['shared'] == 0
+assert eda['overlap']['shared_text_groups'] == 0
+assert len(train) == 2700 and len(test) == 600
+display(Markdown('**Integridade:** nenhuma ausência, conflito ou violação do limite textual foi observada. Isso valida o gerador, não a representatividade clínica.'))
+""",
+    ),
+    ("md", "### Classes: equilíbrio imposto pelo desenho, não prevalência hospitalar"),
+    (
+        "code",
+        """classes = pd.DataFrame(eda['classes'])
+fig, ax = plt.subplots()
+x = np.arange(3)
+ax.bar(x - .18, classes.train, .36, label='Treino: 2.700 linhas', color='#227C9D')
+ax.bar(x + .18, classes.test, .36, label='Teste: 600 linhas', color='#D99B23')
+ax.set(xticks=x, xticklabels=names, ylabel='Linhas sintéticas', ylim=(0, 1200), title='Classes balanceadas por construção')
+ax.legend()
+save_figure('class_distribution')
+display(classes[['name', 'train', 'test', 'train_share', 'test_share']].round(3))
+""",
+    ),
+    ("md", "### Variações não aumentam o número de cenários independentes"),
+    (
+        "code",
+        """fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+for ax, values, title, unit in zip(axes, ([len(train), len(test)], [train.scenario_id.nunique(), test.scenario_id.nunique()]), ('Redações expandidas', 'Cenários-base distintos'), ('Linhas', 'Cenários'), strict=True):
+    bars = ax.bar(['Treino', 'Teste'], values, color=['#227C9D', '#D99B23'])
+    ax.bar_label(bars, padding=3)
+    ax.set(title=title, ylabel=unit, ylim=(0, max(values) * 1.2))
+save_figure('scenario_support')
+display(Markdown('As 60/20 redações de cada cenário compartilham o mesmo achado. O suporte efetivo é pequeno; não calculamos intervalos de confiança tratando variações como observações independentes.'))
+""",
+    ),
+    ("md", "### Comprimentos: contrato da API e custo de inferência"),
+    (
+        "code",
+        """fig, ax = plt.subplots()
+bins = np.linspace(min(train.report_text.str.len().min(), test.report_text.str.len().min()), max(train.report_text.str.len().max(), test.report_text.str.len().max()), 22)
+for data, color, name in ((train, '#227C9D', 'Treino'), (test, '#D99B23', 'Teste')):
+    values = data.report_text.str.len()
+    ax.hist(values, bins=bins, weights=np.ones(len(values)) / len(values) * 100, histtype='step', linewidth=2, label=name, color=color)
+ax.set(xlabel='Caracteres por redação', ylabel='% de linhas na partição', title='Laudos sintéticos curtos: não representam prontuários extensos')
+ax.legend()
+save_figure('text_lengths')
+display(pd.DataFrame({name: eda[name]['characters'] for name in ('train', 'test')}).round(1))
+""",
+    ),
+    ("md", "### Extensão por classe e possíveis atalhos do gerador"),
+    (
+        "code",
+        """fig, ax = plt.subplots()
+for index, label in enumerate(LABEL_NAMES):
+    words = train.loc[train.urgency_label.eq(label), 'report_text'].str.split().str.len()
+    ax.boxplot(words, positions=[index], widths=.5, tick_labels=[names[index]], patch_artist=True, boxprops={'facecolor': colors[index]})
+ax.set(xticks=range(3), xticklabels=names, ylabel='Palavras por redação de treino', title='Comprimento também pode revelar o estilo autoral')
+save_figure('words_by_class')
+display(pd.DataFrame(eda['lexical']['top_mean_tfidf_terms_by_class']).rename(columns={str(k): v for k, v in LABEL_NAMES.items()}))
+display(Markdown('Palavras como “sem”, “estável” ou termos de comprometimento podem servir de atalhos. O modelo aprende associações do autor; essa separabilidade não demonstra raciocínio clínico.'))
+""",
+    ),
+    (
+        "md",
+        """### Sobreposição e cobertura lexical
+
+Zero overlap exato não elimina semelhança de estilo. A similaridade usa vocabulário ajustado somente no treino. O teste compartilha prefixos e sufixos neutros; OOV e similaridade são diagnósticos lexicais, não validação externa.""",
+    ),
+    (
+        "code",
+        """lexical = eda['lexical']
+display(pd.DataFrame([{'vocabulário EDA': lexical['vocabulary_size'], 'tokens OOV no teste (%)': lexical['test_oov_token_share'] * 100, 'vetores zerados': lexical['test_zero_vectors'], 'textos compartilhados': eda['overlap']['shared_text_groups'], 'cenários compartilhados': eda['scenarios']['shared']}]).round(3))
+quantiles = lexical['near_duplicates']['unseen_test_similarity_quantiles']
+fig, ax = plt.subplots()
+bars = ax.bar(['Mínimo', 'p50', 'p90', 'p95', 'Máximo'], quantiles, color='#227C9D')
+ax.bar_label(bars, fmt='%.2f', padding=3)
+ax.set(ylim=(0, 1.1), ylabel='Similaridade cosseno (0–1)', title='Vizinho mais próximo do treino — 600 redações de teste')
+save_figure('lexical_similarity')
+display(eda['distribution'])
 """,
     ),
     (
         "md",
         """## Resultados
 
-### Distribuição de classes
+### Baseline, validação por cenário e teste reservado
 
-As categorias são exclusivas por linha, mas **não por texto**. Macro-F1 dá o mesmo peso às cinco classes; acurácia isolada favorece a maior classe. Os pesos balanceados são uma escolha fixa do baseline, não uma seleção pelo teste.""",
+Modelo fixo, sem busca de hiperparâmetros. A classe majoritária é a referência mínima. Avaliamos também uma primeira redação fixa de cada cenário de teste, sem votação entre variantes. O teste não foi usado para modificar os achados ou otimizar o modelo.""",
     ),
     (
         "code",
-        """classes = pd.DataFrame(eda['classes'])
-display(classes[['label','name','train','test','share_difference_pp']].round(4))
-y = np.arange(5)
+        """validation = validate_baseline(train)
+model = train_model(train)
+test_metrics = evaluate_model(model, test)
+scenario_metrics = scenario_evaluation(model, test)
+scores = [validation['majority_baseline']['macro_f1'], validation['model']['macro_f1'], test_metrics['macro_f1'], scenario_metrics['metrics']['macro_f1']]
 fig, ax = plt.subplots()
-ax.barh(y-.18, classes.train_share*100, height=.34, color=COLORS['Treino'], label='Treino')
-ax.barh(y+.18, classes.test_share*100, height=.34, color=COLORS['Teste'], label='Teste')
-ax.set(yticks=y, yticklabels=NAMES, xlabel='Participação nas linhas de cada partição (%)', title='Composição das cinco classes')
+bars = ax.barh(['Majoritário (validação)', 'Modelo (validação: 9 cenários)', 'Teste (600 redações)', 'Teste (30 cenários)'], scores, color=['#778899', '#227C9D', '#D99B23', '#227C9D'])
+ax.bar_label(bars, fmt='%.3f', padding=4)
+ax.set(xlim=(0, 1), xlabel='Macro-F1 (0–1)', title='Resultados sintéticos, sem interpretação clínica')
 ax.invert_yaxis()
-ax.legend()
-show_figure('class_distribution')
-display(Markdown(f"A maior classe tem **{classes.train.max()/classes.train.min():.2f} vezes** o volume da menor. Maior diferença treino/teste: **{classes.share_difference_pp.abs().max():.4f} ponto percentual**. Proporções semelhantes não provam independência textual."))
+save_figure('model_performance')
+display(pd.DataFrame(scenario_metrics['metrics']['per_class']).T.rename(index={str(k): v for k, v in LABEL_NAMES.items()}).round(3))
+assert set(model.classes_) == {0, 1, 2}
 """,
     ),
-    ("md", "### Comprimento e contrato da API"),
+    ("md", "### Matriz de confusão: os erros são parte da entrega"),
     (
         "code",
-        """display(pd.DataFrame({split: eda[split]['characters'] for split in ['train','test']}).round(1))
-fig, ax = plt.subplots()
-for name, data in [('Treino',train), ('Teste',test)]:
-    values = data.medical_abstract.str.len()
-    ax.hist(values, bins=np.arange(0,4250,250), weights=np.ones(len(values))*100/len(values),
-            histtype='step', linewidth=2, label=name, color=COLORS[name])
-ax.set(xlabel='Caracteres por abstract', ylabel='Linhas da partição (%)', title='Comprimento dos textos — cauda preservada')
-ax.legend()
-show_figure('text_lengths')
-fig, ax = plt.subplots()
-ax.boxplot([train.loc[train.condition_label.eq(label),'medical_abstract'].str.split().str.len()
-            for label in labels], tick_labels=NAMES, orientation='horizontal')
-ax.set(xlabel='Palavras por abstract de treino', title='Dispersão do tamanho por classe')
-show_figure('words_by_class')
-display(Markdown(f"Máximo no treino: **{train.medical_abstract.str.len().max():,} caracteres**. O limite de 20.000 da API não trunca este corpus. KS exploratório: **D={eda['distribution']['character_length_ks_statistic']:.4f}**. Duplicatas violam independência; o p-valor não comprova ausência de drift. Não existem datas para analisar mudança temporal."))
+        """matrix = np.asarray(scenario_metrics['metrics']['confusion_matrix'])
+assert matrix.sum() == 30
+fig, ax = plt.subplots(figsize=(6, 5))
+heatmap = ax.imshow(matrix, cmap='Blues', vmin=0, vmax=10)
+for row in range(3):
+    for col in range(3):
+        ax.text(col, row, str(matrix[row, col]), ha='center', va='center', color='white' if matrix[row, col] > 5 else '#17324D', fontsize=16)
+ax.set(xticks=range(3), yticks=range(3), xticklabels=names, yticklabels=names, xlabel='Predição', ylabel='Rótulo pedagógico', title='Teste: uma redação por cenário (n = 30)')
+fig.colorbar(heatmap, ax=ax, label='Cenários')
+save_figure('confusion_scenarios')
+errors = pd.DataFrame(scenario_metrics['errors'])
+display(errors)
+display(Markdown(f"**{len(errors)}/30 cenários incorretos**, {scenario_metrics['underassigned']} subestimados e {scenario_metrics['overassigned']} superestimados. Urgente → atenção: {matrix[2, 1]}; urgente → normal: {matrix[2, 0]}. Zero nessa última célula não comprova segurança."))
 """,
     ),
     (
         "md",
-        """### Repetições, conflitos e sobreposição
+        """## Conclusões
 
-Nenhuma linha inteira se repete, mas isso não torna os textos únicos. O agrupamento ignora o rótulo e detecta ambiguidades que um `drop_duplicates()` das duas colunas não resolve. Sem revisar as anotações originais, não é possível distinguir erro de rotulagem de múltiplas categorias legítimas.""",
-    ),
-    (
-        "code",
-        """overlap = eda['overlap']
-fig, ax = plt.subplots(figsize=(10,3))
-counts = [overlap['test_rows_seen_in_train'], overlap['test_unseen_rows']]
-bars = ax.barh(['Texto também no treino','Texto inédito no teste'], counts, color=['#C07828','#245A81'])
-ax.bar_label(bars, labels=[f'{value:,} ({value/len(test):.1%})' for value in counts], padding=6)
-ax.set(xlim=(0,max(counts)*1.3), xlabel='Linhas do teste fornecido', title='Exposição do teste ao treino')
-show_figure('test_overlap')
-matrix = np.asarray(overlap['label_cooccurrence'])
-fig, ax = plt.subplots(figsize=(9,6))
-view = ax.imshow(matrix, cmap='Blues')
-for row in range(5):
-    for col in range(5):
-        ax.text(col,row,f'{matrix[row,col]:,}',ha='center',va='center',color='white' if matrix[row,col]>matrix.max()/2 else '#202020')
-ax.set(xticks=range(5),yticks=range(5),xticklabels=range(1,6),yticklabels=NAMES,
-       xlabel='Rótulo (1 a 5, mesma ordem das linhas)',title='Categorias associadas ao mesmo texto — corpus combinado')
-fig.colorbar(view, ax=ax, label='Grupos de texto')
-show_figure('label_conflicts')
-display(Markdown(f"A diagonal conta grupos de cada classe; fora dela, grupos com ambos os rótulos. Teto empírico da acurácia para uma decisão única por texto neste corpus combinado: **{overlap['single_label_empirical_accuracy_ceiling']:.2%}** (soma da categoria mais frequente por grupo / linhas). Não é previsão de desempenho, teto universal ou evidência clínica."))
-""",
-    ),
-    (
-        "md",
-        """### Vocabulário e similaridade lexical
-
-Exploração: até 20.000 unigramas, `min_df=2`, stopwords em inglês, ajuste só no treino. Não confundir esse vocabulário exploratório com os 30.000 unigramas de produção. A tabela mostra maior TF-IDF médio por classe; não é explicação causal nem lista de palavras exclusivas.""",
-    ),
-    (
-        "code",
-        """lexical = eda['lexical']
-display(pd.DataFrame({NAMES[int(label)-1]: terms for label,terms in lexical['top_mean_tfidf_terms_by_class'].items()}))
-near = lexical['near_duplicates']
-display(Markdown(f'''Vocabulário: **{lexical['vocabulary_size']:,} termos**; esparsidade do treino: **{lexical['train_sparsity']:.2%}**. Tokens fora do vocabulário limitado no teste: **{lexical['test_oov_token_share']:.2%}**; vetores vazios no teste: **{lexical['test_zero_vectors']}**.
-
-Entre textos sem igualdade normalizada, **{near['unseen_test_rows_similarity_ge_090']}** linhas atingem cosseno ≥ 0,90 com o vizinho de treino; **{near['unseen_test_rows_similarity_ge_095']}** atingem ≥ 0,95. São limiares exploratórios: não provam ausência de paráfrases nem independência de pacientes. Não removemos linhas com base nos rótulos de teste.'''))
-""",
-    ),
-    (
-        "md",
-        """### Baseline, generalização e análise de erros
-
-TF-IDF + regressão logística balanceada, configuração fixa. Tokenização ASCII de dois ou mais caracteres alinhada com ONNX. Frequência sublinear desativada: o conversor instalado não reproduzia sua fórmula. Bigramas também foram removidos após quatro discrepâncias de vetorização; unigramas preservam a equivalência. As mudanças são de compatibilidade, não seleção pelos resultados do teste.""",
-    ),
-    (
-        "code",
-        """comparisons = {'Majoritário (validação)':validation['majority_baseline'], 'Modelo (validação por grupos)':validation['model'],
-               'Teste completo':evaluation['supplied_test'], 'Teste: texto inédito':evaluation['unseen_texts'], 'Teste: texto visto':evaluation['seen_texts']}
-table = pd.DataFrame({name:{key:result[key] for key in ['rows','accuracy','macro_f1']} for name,result in comparisons.items()}).T
-display(table.round(4))
-fig, ax = plt.subplots()
-bars = ax.barh(table.index,table.macro_f1,color='#245A81')
-ax.bar_label(bars,fmt='%.3f',padding=5)
-ax.set(xlim=(0,1),xlabel='Macro-F1 (0 a 1)',title='Performance por população — comparações descritivas')
-ax.invert_yaxis()
-show_figure('model_performance')
-display(pd.DataFrame(evaluation['unseen_texts']['per_class']).T.round(4))
-matrix = np.asarray(evaluation['unseen_texts']['confusion_matrix'])
-rates = matrix/matrix.sum(axis=1,keepdims=True)
-fig, ax = plt.subplots(figsize=(9,6))
-view = ax.imshow(rates,vmin=0,vmax=1,cmap='Blues')
-for row in range(5):
-    for col in range(5):
-        ax.text(col,row,f'{matrix[row,col]}\\n{rates[row,col]:.0%}',ha='center',va='center',color='white' if rates[row,col]>.5 else '#202020')
-ax.set(xticks=range(5),yticks=range(5),xticklabels=range(1,6),yticklabels=NAMES,
-       xlabel='Categoria predita (1 a 5)',ylabel='Categoria fornecida',title='Erros em textos inéditos — contagem e proporção por linha')
-fig.colorbar(view,ax=ax,label='Proporção da classe verdadeira')
-show_figure('confusion_unseen')
-""",
-    ),
-    (
-        "code",
-        """probabilities = model.predict_proba(test.medical_abstract)
-confidence = probabilities.max(axis=1)
-correct = model.classes_[probabilities.argmax(axis=1)] == test.condition_label.to_numpy()
-confidence_table = pd.DataFrame({'confidence':confidence,'correct':correct})
-confidence_table['faixa'] = pd.cut(confidence,bins=np.linspace(0,1,6),include_lowest=True)
-display(confidence_table.groupby('faixa',observed=True).agg(linhas=('correct','size'),confianca_media=('confidence','mean'),acuracia=('correct','mean')).round(4))
-display(Markdown('Confiança é a maior probabilidade do modelo, **não calibrada para uso clínico**. A tabela é descritiva; não ajusta calibrador nem estabelece limiares de triagem ou tratamento.'))
-""",
-    ),
-    (
-        "md",
-        """## Conclusões e decisões para as issues
-
-| Evidência / risco | Decisão | Atividade |
-|---|---|---|
-| Overlap textual, gravidade alta para a avaliação | Holdout por grupos e teste inédito explícito | #1, #7 |
-| Conflitos de categoria, limitação alta do alvo único | Preservar rótulos; não ocultar ambiguidade nem mudar para múltiplos rótulos sem decisão de produto | #1, #6 |
-| Desbalanceamento | Macro-F1, análise por classe, majoritário e pesos balanceados | #1, #7 |
-| Textos completos e dentro do limite | Contrato automatizado; rejeitar entradas inválidas na API | #1, #2 |
-| Conversão antiga alterava predições | Equivalência de rótulos e probabilidades em todo o teste e casos de borda | #3 |
-| Inferência leve e esparsa | Latência com textos variados, aquecimento e rodadas pareadas; não quantizar sem ganho | #3 |
-| Retreino pode falhar | Candidato isolado, avaliação e publicação atômica após aprovação | #5 |
-| Observabilidade precisa funcionar | Validar fonte do Grafana, consultas e métricas de tráfego real | #4 |
-
-O baseline supera o majoritário, mas mantém erros relevantes. A entrega comprova engenharia de ML, **não aptidão diagnóstica**. Não podemos inferir urgência, desempenho por hospital, equidade demográfica ou generalização a prontuários em português. O vídeo STAR deve mostrar também essas limitações.
+1. **Alvo corrigido:** três urgências, não cinco doenças. Proveniência sintética acompanha os dados, o modelo e cada resposta da API. Nenhum mapeamento doença → urgência é aplicado.
+2. **Diversidade é o gargalo:** 75 cenários autorais e redações repetidas sustentam apenas uma demonstração de engenharia. Mais de 2.000 linhas não equivalem a 2.000 casos independentes. Confirmar a adaptação com a avaliação acadêmica.
+3. **Avaliação sem vazamento de família:** 36/9 cenários no holdout e 45/30 no treino/teste final. Compartilhamento de estilo permanece; não há validade externa.
+4. **Desempenho limitado:** macro-F1 de validação 0,615 versus 0,167 do majoritário; teste por cenário 0,738. Oito erros em 30 cenários, incluindo três urgentes subestimados. A API não pode ser usada para decisões clínicas.
+5. **Engenharia verificável:** contrato valida origem, três classes e isolamento; exportação ONNX só é aprovada após equivalência de rótulos/probabilidades e ganho de latência medido. O monitoramento mede serviço, não qualidade clínica.
+6. **Evolução responsável:** uma aplicação real exigiria dados de laudos com urgência anotada por especialistas, acesso autorizado, validação externa e temporal, estudo de negações e calibração. Esses itens não foram realizados.
 
 ### Verificação
 
-Cálculos refeitos de cima para baixo. Totais reconciliados; ausência de overlap na validação verificada. Notebook e figuras contêm somente resultados agregados; CSVs permanecem locais. Os módulos reutilizados estão sob testes automatizados.""",
+Notebook executado de cima para baixo. Contagens, partições e matriz reconciliadas. Sete figuras calculadas a partir dos CSVs gerados; sem pacientes reais. Ambiente abaixo. Confiança retornada é a maior probabilidade do modelo, **não calibrada** e não é probabilidade de risco clínico.""",
     ),
     ("code", "display(environment())"),
 ]
 
 
 def main() -> None:
-    """Executa em kernel limpo e exporta uma prévia HTML da mesma análise."""
+    """Executa em kernel limpo e exporta a mesma análise para HTML."""
     notebook = nbformat.v4.new_notebook()
     notebook.metadata.kernelspec = {
         "display_name": "Python 3",
@@ -261,7 +236,7 @@ def main() -> None:
         else nbformat.v4.new_code_cell(text)
         for kind, text in CELLS
     ]
-    target = ROOT / "notebooks/01_eda_medical_abstracts.ipynb"
+    target = ROOT / "notebooks/01_eda_synthetic_triage.ipynb"
     target.parent.mkdir(exist_ok=True)
     nbformat.write(notebook, target)
     subprocess.run(

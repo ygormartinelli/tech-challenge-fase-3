@@ -129,7 +129,8 @@
     "tech-challenge",
     "medical"
   ],
-  "title": "Medical Classifier",
+  "title": "Urgência sintética — simulação acadêmica",
+  "description": "Métricas operacionais da demonstração. Não medem qualidade ou segurança clínica. Dados sintéticos; não utilizar para decisões sobre pacientes.",
   "uid": "medical-classifier",
-  "version": 2
+  "version": 3
 }

@@ -9,7 +9,7 @@ def test_committed_notebook_contains_executed_results() -> None:
     """Protege contra publicação acidental de notebook sem resultados."""
     root = Path(__file__).resolve().parents[1]
     notebook = nbformat.read(
-        root / "notebooks/01_eda_medical_abstracts.ipynb", as_version=4
+        root / "notebooks/01_eda_synthetic_triage.ipynb", as_version=4
     )
     nbformat.validate(notebook)
     code = [cell for cell in notebook.cells if cell.cell_type == "code"]

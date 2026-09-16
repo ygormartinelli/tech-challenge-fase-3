@@ -1,6 +1,8 @@
 {
+  "task_id": "synthetic_urgency_v1",
+  "data_origin": "synthetic",
   "environment": {
-    "created_at": "2026-09-15T13:39:54.683297+00:00",
+    "created_at": "2026-09-16T00:49:29.285749+00:00",
     "python": "3.11.15",
     "platform": "Windows-10-10.0.26200-SP0",
     "packages": {
@@ -15,11 +17,11 @@
   "seed": 42,
   "iterations": 200,
   "warmup_iterations": 20,
-  "test_sha256": "1eecea73c9ecad292c55e10403bd139fab9580545d6878482997c5564d51ac05",
+  "test_sha256": "18ebf65a7535fa0a3588ded2a8bb289ccdb3603c0a3226ecc2d38a8e6caaec1d",
   "latency": {
-    "mean_ms": 8.444386499991197,
-    "p50_ms": 6.036900000026435,
-    "p95_ms": 24.126699999919754,
-    "throughput_per_second": 118.42186522384338
+    "mean_ms": 9.886971499872743,
+    "p50_ms": 7.514750001064385,
+    "p95_ms": 27.654114999313595,
+    "throughput_per_second": 101.14320649279419
   }
 }

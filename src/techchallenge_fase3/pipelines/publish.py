@@ -11,6 +11,7 @@ from techchallenge_fase3.artifacts import (
     validate_release,
 )
 from techchallenge_fase3.config import Settings
+from techchallenge_fase3.data import TASK_ID
 from techchallenge_fase3.pipelines.benchmark import benchmark_accepted
 from techchallenge_fase3.reporting import file_hash, write_json
 
@@ -23,6 +24,12 @@ def checked_evidence(settings: Settings) -> dict:
     evaluation = json.loads(
         (settings.report_dir / "evaluation.json").read_text(encoding="utf-8")
     )
+    for evidence in (report, evaluation):
+        if (
+            evidence.get("task_id") != TASK_ID
+            or evidence.get("data_origin") != "synthetic"
+        ):
+            raise ValueError("Evidence does not describe synthetic urgency")
     if not benchmark_accepted(report):
         raise ValueError("Benchmark did not approve optimization")
     for name in (ORIGINAL_MODEL, OPTIMIZED_MODEL):

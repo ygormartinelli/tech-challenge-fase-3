@@ -1,306 +1,253 @@
-# Tech Challenge FIAP — Fase 3
+# Tech Challenge Fase 3 — urgência em laudos sintéticos
 
-Classificador educacional de cinco categorias de condições médicas. Entrega
-TF-IDF + regressão logística, FastAPI, ONNX Runtime, Docker, Prometheus/Grafana,
-Airflow e GitHub Actions. Execução local; **nenhuma nuvem foi provisionada**.
+API de **demonstração acadêmica** que recebe um texto e classifica `normal`, `atenção` ou `urgente`, com TF-IDF + LogisticRegression, FastAPI, Docker, ONNX Runtime, Prometheus, Grafana, Airflow e GitHub Actions.
 
-> Exclusivamente educacional. Não realiza diagnóstico, triagem, avaliação de
-> urgência ou recomendação de tratamento. A confiança não é uma probabilidade
-> clínica calibrada. Não envie dados reais de pacientes.
+> Treinada exclusivamente com dados sintéticos. Não utilizar para triagem clínica, diagnóstico ou tratamento de pacientes. A confiança não é uma probabilidade de risco clínico. Não enviar dados de pacientes reais.
 
-## Comece por aqui
+## Correção de escopo e adaptação do dataset
 
-- [EDA: conclusões e decisões](docs/eda.md)
-- [Notebook executado: 18 células e 7 gráficos](notebooks/01_eda_medical_abstracts.ipynb)
-- [Requisitos](docs/requirements/MLET%20-%20Tech%20Challenge%20Fase%203.md)
-- [Issues](https://github.com/ygormartinelli/tech-challenge-fase-3/issues),
-  [Kanban](https://github.com/users/ygormartinelli/projects/1) e
-  [CI](https://github.com/ygormartinelli/tech-challenge-fase-3/actions)
+O [requisito](docs/requirements/MLET%20-%20Tech%20Challenge%20Fase%203.md) pede **urgência**. A implementação inicial classificava cinco categorias de doenças e **não atendia esse alvo**. Esta versão 0.2.0 corrige o modelo e o contrato; não é uma simples troca de nomes.
 
-## O que a EDA mudou
+O [Medical Abstracts TC Corpus](https://github.com/sebischair/Medical-Abstracts-TC-Corpus), sugerido no enunciado e disponível em `data/raw`, contém abstracts com categorias de doenças, não rótulos de urgência. Seus CSVs originais permanecem intactos e fora do Git. Não é válido deduzir urgência apenas da doença.
 
-São **11.550 linhas de treino e 2.888 de teste**, sem nulos. Porém,
-**1.010 linhas de teste (34,97%) repetem textos de treino**, e 2.929 grupos
-do corpus combinado possuem categorias diferentes para o mesmo texto.
-Não removemos esses conflitos nem escolhemos rótulos arbitrariamente.
+**Adaptação autorizada pelo responsável:** criar uma base sintética separada para demonstrar o ciclo completo. Os cinco temas do corpus — neoplasias, sistema digestivo, sistema nervoso, cardiovascular e condições gerais — servem apenas de referência temática. Nenhum abstract original foi copiado para o treino ou recebeu um rótulo artificial de urgência.
 
-A análise inclui classes, comprimentos, duplicatas, conflitos, sobreposição,
-vocabulário, similaridade lexical, baseline majoritário, matriz de confusão e
-confiança. A avaliação separa explicitamente as populações:
+A [receita auditável](src/techchallenge_fase3/synthetic_cases.py) contém 75 cenários e rótulos fictícios, criados com assistência de IA para esta demonstração, sem anotação clínica especializada. O [gerador](src/techchallenge_fase3/pipelines/generate.py) registra seed, hashes, origem e política no [manifesto](reports/data_generation.json).
 
-| População | Linhas | Acurácia | Macro-F1 |
+| Partição | Cenários-base | Variações por cenário | Linhas |
 |---|---:|---:|---:|
-| Majoritário na validação | 2.310 | 0,3329 | 0,0999 |
-| Modelo na validação por grupos | 2.310 | 0,6623 | 0,6650 |
-| Teste completo | 2.888 | 0,5945 | 0,5982 |
-| Teste: textos inéditos | 1.878 | 0,7604 | 0,7601 |
-| Teste: textos vistos | 1.010 | 0,2861 | 0,3112 |
+| Treino | 45 | 60 | 2.700 |
+| Teste | 30 | 20 | 600 |
 
-São populações distintas, não uma melhoria causal. O teste já havia sido
-avaliado antes da revisão, portanto não é um holdout cego. Evidências:
-[validação](reports/validation.json), [avaliação](reports/evaluation.json)
-e [qualidade dos dados](reports/eda.json).
+As classes são balanceadas por construção. Prefixos e sufixos neutros variam a redação, não o rótulo. Cada tema contém os três níveis. `scenario_id`, `source_theme` e `source_type` são metadados de auditoria; **somente `report_text` entra no modelo**.
 
-## Instalação e execução
+**Limite essencial:** 3.300 linhas não são 3.300 casos clínicos independentes. O requisito menciona pelo menos 2.000 amostras; a expansão supera essa contagem de linhas, mas não comprova essa diversidade. A aceitação acadêmica da adaptação sintética deve ser confirmada pelo autor com a instituição. Não alegamos validação clínica nem cumprimento de um requisito de 2.000 casos reais.
 
-Pré-requisitos: Python 3.11, [uv](https://docs.astral.sh/uv/), Docker Desktop
-em modo Linux e Docker Compose. GNU Make oferece os atalhos abaixo; cada etapa
-também pode ser executada com
-`uv run --frozen python -m techchallenge_fase3.pipelines.NOME`.
+## Executar do zero
 
-Mantenha em `data/raw/`: `medical_tc_train.csv`, `medical_tc_test.csv` e
-`medical_tc_labels.csv`. Os CSVs não são baixados automaticamente nem enviados
-ao Git. Referência: [corpus de Schopf, Braun e Matthes](https://github.com/sebischair/Medical-Abstracts-TC-Corpus),
-com licença publicada CC BY-SA 3.0. O relatório de EDA registra os hashes dos
-arquivos efetivamente analisados; não redistribuímos abstracts.
+Pré-requisitos: Python 3.11 ou 3.12, `uv` e Docker Desktop com Compose. Os comandos abaixo partem da raiz do repositório. Nenhuma instalação local de Airflow, Prometheus ou Grafana é necessária.
 
-Na raiz do projeto, em PowerShell:
-
-~~~powershell
-# Apenas na primeira configuração; preserve um .env existente.
-Copy-Item .env.example .env
+```powershell
+git clone https://github.com/ygormartinelli/tech-challenge-fase-3.git
+cd tech-challenge-fase-3
 uv sync --frozen --all-groups
-uv run pre-commit install
-make validate
-make eda
-make notebook
+Copy-Item .env.example .env
+uv run --frozen python -m techchallenge_fase3.pipelines.generate
+uv run --frozen python -m techchallenge_fase3.pipelines.validate
+uv run --frozen python -m techchallenge_fase3.pipelines.eda
+```
+
+Não sobrescreva um `.env` existente. Configure uma senha local para `GRAFANA_ADMIN_PASSWORD`. No Linux/macOS, use `cp .env.example .env`. CSVs e modelos não são commitados; os dados sintéticos podem ser reproduzidos sem baixar o corpus original.
+
+Com `make` instalado:
+
+```text
 make pipeline
+make notebook
+make lint
+make test
 make compose
-~~~
+make smoke
+```
 
-Em Linux/macOS, use `cp .env.example .env` para a cópia.
-API, Prometheus, Grafana e Airflow são instalados **pelas imagens Docker**.
-Não instale Airflow no Windows. Dependências Python de execução usam o mesmo
-`uv.lock`; a imagem da API não instala as dependências do notebook.
-Airflow executa o projeto em ambiente separado do seu próprio ambiente.
+Sem `make`, execute as etapas `validate`, `train`, `optimize`, `evaluate`, `benchmark` e `publish`, **nessa ordem**, usando `uv run --frozen python -m techchallenge_fase3.pipelines.<etapa>`. Pare se alguma falhar. Para o notebook: `uv run --frozen python scripts/build_notebook.py`.
 
-`make pipeline` executa `validate → train → optimize → evaluate → benchmark → publish`.
-Se uma etapa falhar, a sequência para e a release anterior permanece publicada.
+```text
+docker compose --env-file .env -f docker/docker-compose.yml up --build -d --wait
+uv run --frozen python scripts/verify_stack.py
+```
 
-## API e contrato
+O primeiro build baixa as dependências; modelos não são incorporados à imagem. A API monta `models` somente para leitura. Sem uma release publicada e compatível, `/health` responde 503. Os arquivos `.env`, os dados e os modelos também ficam fora do contexto de build.
 
-| Rota | Comportamento |
+| Serviço | Endereço local | Acesso |
+|---|---|---|
+| API e exemplos interativos | http://localhost:8000/docs | Sem autenticação; somente localhost |
+| Readiness | http://localhost:8000/health | Retorna tarefa, origem e variante |
+| Métricas | http://localhost:8000/metrics | Prometheus |
+| Prometheus | http://localhost:9090 | Target `api:8000` deve estar UP |
+| Grafana | http://localhost:3000/d/medical-classifier | `admin` e senha do `.env` |
+| Airflow, perfil opcional | http://localhost:8080 | Usuário `admin`; senha gerada pelo standalone |
+
+Essas configurações são locais, sem TLS ou autenticação na API. Não exponha as portas à rede pública. Alterar a senha no `.env` não redefine uma senha já persistida pelo Grafana; use a administração do serviço nesse caso.
+
+## Contrato da API
+
+`POST /predict`, JSON com `report_text`, entre 10 e 20.000 caracteres após remover espaços externos. Campos extras, texto vazio e tipos incorretos retornam 422. Falhas de modelo retornam 503 genérico, sem expor caminhos ou o texto recebido.
+
+Exemplo de **entrada fictícia**, que pode ser colado no Swagger:
+
+```json
+{"report_text": "Hemorragia ativa extensa após trauma com instabilidade circulatória."}
+```
+
+A resposta contém:
+
+| Campo | Significado |
 |---|---|
-| `POST /predict` | Categoria, nome, confiança, variante e aviso educacional |
-| `GET /health` | Readiness: 200 quando o modelo carrega; 503 se indisponível |
-| `GET /metrics` | Métricas Prometheus sem textos recebidos |
-| `GET /docs` | Documentação interativa OpenAPI |
+| `urgency_label` | 0, 1 ou 2 |
+| `urgency` | `normal`, `atenção` ou `urgente`, respectivamente |
+| `confidence` | Maior probabilidade do modelo; não calibrada |
+| `model_variant` | `original` ou `optimized`, realmente utilizada |
+| `data_origin` | Sempre `synthetic` |
+| `requires_human_review` | Sempre `true`; não autoriza uso clínico |
+| `disclaimer` | Advertência explícita de simulação acadêmica |
 
-~~~powershell
-$payload = @{ medical_abstract = "Tumor cells were investigated in cancer treatment." } | ConvertTo-Json
-Invoke-RestMethod -Method Post -Uri http://localhost:8000/predict -ContentType "application/json" -Body $payload
-~~~
+PowerShell:
 
-Resposta: `condition_label`, `condition_name`, `confidence`, `model_variant`
-e `disclaimer`. Não há campo de urgência.
+```powershell
+$payload = @{report_text = 'Hemorragia ativa extensa após trauma com instabilidade circulatória.'} | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://localhost:8000/predict -ContentType 'application/json; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes($payload))
+```
 
-| Rótulo | Nome retornado |
-|---|---|
-| 1 | neoplasms |
-| 2 | digestive system diseases |
-| 3 | nervous system diseases |
-| 4 | cardiovascular diseases |
-| 5 | general pathological conditions |
+**Mudança incompatível:** `medical_abstract`, `condition_label` e `condition_name` pertencem à versão anterior. O carregador rejeita releases sem `task_id=synthetic_urgency_v1` e `data_origin=synthetic`, impedindo que o modelo de doenças seja servido como urgência.
 
-Vazios, valores não textuais, textos menores que 10 ou maiores que 20.000
-caracteres e campos extras recebem 422. Erros de modelo recebem 503 genérico,
-sem detalhes internos. `make run` inicia somente a API Python; não use a mesma
-porta simultaneamente com a API Docker.
+## EDA e resultados de modelagem
 
-## Modelo, otimização e publicação segura
+Abra o [notebook executado](notebooks/01_eda_synthetic_triage.ipynb), com sete gráficos, cálculos reproduzíveis, análise de erros e conclusões. Há uma [síntese das decisões](docs/eda.md) e o [relatório agregado](reports/eda.json). `make notebook` também cria `reports/eda.html` localmente.
 
-Modelo final: até 30.000 unigramas, tokenização ASCII explícita de dois ou mais
-caracteres, TF linear e regressão logística balanceada, seed 42. Validação:
-primeiro fold de `StratifiedGroupKFold(5)` com grupos disjuntos, aproximadamente
-80/20; não é média de cinco folds. Depois, ajuste nas 11.550 linhas de treino.
+- Não foram observados nulos, conflitos de rótulo ou violações do limite textual na base gerada.
+- Cenários separados antes da expansão; nenhum cenário ou texto normalizado compartilhado entre treino/teste. Holdout interno por cenário: 36 para treino e 9 para validação.
+- O vocabulário é ajustado somente no treino. A EDA observou 14,81% de tokens do teste fora de seu vocabulário; não houve vetor de teste totalmente zerado. Esse diagnóstico usa o vetorizador exploratório, distinto do pipeline ONNX.
+- Prefixos comuns e estilo autoral limitam a independência. O teste usa apenas as primeiras 20 combinações de estilo, explicando parte dos textos mais curtos. Não houve validação externa, temporal, demográfica ou por hospital.
 
-A revisão detectou diferenças na conversão do tokenizer, da frequência sublinear
-e de alguns bigramas. A configuração final evita essas divergências sem
-conversor customizado. Veja o [diagnóstico preservado](reports/onnx_pre_fix.json)
-e a [documentação do conversor](https://onnx.ai/sklearn-onnx/_modules/skl2onnx/operator_converters/text_vectoriser.html).
+| Avaliação | Acurácia | Macro-F1 |
+|---|---:|---:|
+| Majoritário na validação | 33,33% | 0,167 |
+| Modelo na validação, 540 redações / 9 cenários | 63,89% | 0,615 |
+| Teste, 600 redações / 30 cenários | 73,17% | 0,737 |
+| Teste, primeira redação de cada um dos 30 cenários | 73,33% | 0,738 |
 
-Factory seleciona a estratégia original ou ONNX; ambas retornam rótulos e
-probabilidades em uma única passagem. ONNX exige aprovação vinculada aos hashes
-da release. Sem aprovação, a seleção usa o original; arquivo ausente ou
-corrompido falha fechado com 503.
+O teste por cenário teve **8 erros**, incluindo **3 urgentes classificados como atenção**. Recall de urgente: 70%, suporte de apenas 10 cenários urgentes. Os [erros e métricas por classe](reports/evaluation.json) permanecem visíveis. Não alteramos os rótulos ou o modelo em função dos erros do teste.
 
-Candidatos ficam em `models/candidate/`. A publicação cria uma release em
-`models/releases/` e troca atomicamente `models/current.json`, sem apagar
-releases anteriores. **Carregue joblib somente de origem confiável.**
-A API mantém a release em memória; para adotar uma publicação posterior:
+![Matriz de confusão em cenários sintéticos](reports/figures/confusion_scenarios.png)
 
-~~~powershell
-docker compose --env-file .env -f docker/docker-compose.yml restart api
-~~~
+Esses resultados não estimam desempenho em pacientes reais. O modelo de unigramas pode falhar com negações, linguagem fora do domínio, abreviações ou contextos novos. A tokenização ASCII, compartilhada com ONNX, fragmenta palavras acentuadas. Não há detecção confiável de entrada fora de distribuição, calibração clínica ou protocolo de triagem validado.
 
-Não execute dois pipelines CLI simultaneamente sobre o mesmo candidato.
-Airflow usa outro candidato, `max_active_runs=1` e relatórios em
-`reports/runtime/airflow/`, separados da evidência versionada desta entrega.
+## Otimização e latência
 
-### Benchmark
-
-`make benchmark` usa 200 textos variados, seed 42, 20 chamadas de aquecimento
-e três rodadas com ordem alternada. O contrato medido inclui rótulos e
-probabilidades, sem HTTP. Aprovação exige:
-
-- Rótulos idênticos em todo o teste e seis casos de borda: 2.894 textos.
-- Diferença absoluta máxima nas probabilidades ≤ `1e-5`.
-- p50 ONNX menor em todas as três rodadas.
-
-Resultado local Windows/CPU de 15/09/2026:
+[Benchmark local de inferência](reports/latency_benchmark.json), CPU/Windows, 15/09/2026 (horário de Brasília): 20 aquecimentos, 200 textos em cada uma de três rodadas, ordem alternada. Mede rótulo **e** probabilidades, um texto por vez. Throughput abaixo é sequencial, não capacidade sob carga concorrente.
 
 | Variante | Média (ms) | p50 (ms) | p95 (ms) | Predições/s |
 |---|---:|---:|---:|---:|
-| Original | 1,1225 | 1,0617 | 1,6354 | 890,84 |
-| ONNX | 0,3290 | 0,2804 | 0,6177 | 3.039,86 |
+| joblib / scikit-learn | 0,7632 | 0,7277 | 0,9845 | 1.310 |
+| ONNX Runtime | 0,0375 | 0,0351 | 0,0471 | 26.690 |
 
-Zero divergências de rótulo; maior diferença de probabilidade: `2,06e-7`.
-[Relatório, hashes e rodadas](reports/latency_benchmark.json).
-O grafo usa `LinearClassifier`, sem operadores elegíveis identificados para
-quantização dinâmica padrão; não aplicamos quantização sem ganho demonstrado.
+O p50 ficou aproximadamente **20,7× menor** nesse ensaio. Paridade em 606 entradas (600 de teste + 6 bordas): zero divergências de classe; maior diferença absoluta de probabilidade 1,34×10⁻⁷, abaixo de 10⁻⁵. Isso comprova equivalência de implementação nesse conjunto, não correção clínica.
 
-`make api-benchmark` mede a variante realmente em execução, consumindo a
-resposta HTTP inteira: 200 textos fixos e 20 chamadas de aquecimento.
-Altere `MODEL_VARIANT` no `.env`, recrie apenas a API com o comando abaixo e
-execute uma vez para cada variante. Deixe `optimized` ao final.
+`optimized` só é aprovado quando há equivalência e p50 menor **em todas as três rodadas**. O relatório registra ambiente e hashes dos dados/modelos; falha no gate impede publicação. Não aplicamos quantização: o grafo exportado não possui os operadores elegíveis avaliados, e não foi demonstrado ganho adicional. ONNX float é a técnica de otimização entregue.
 
-~~~powershell
-docker compose --env-file .env -f docker/docker-compose.yml up -d --no-deps --force-recreate --wait api
-make api-benchmark
-~~~
+O [benchmark HTTP original](reports/http_original.json) e o [benchmark HTTP ONNX](reports/http_optimized.json) medem Docker + rede local + serialização, com 20 aquecimentos e 200 requisições. Não confunda seus tempos com inferência isolada.
 
-| HTTP em Docker | Média (ms) | p50 (ms) | p95 (ms) | Requisições/s |
+| Variante HTTP | Média (ms) | p50 (ms) | p95 (ms) | Requisições/s sequenciais |
 |---|---:|---:|---:|---:|
-| Original | 8,4444 | 6,0369 | 24,1267 | 118,42 |
-| ONNX | 7,3982 | 4,8242 | 25,9381 | 135,17 |
+| Original | 9,887 | 7,515 | 27,654 | 101,1 |
+| ONNX | 9,221 | 6,709 | 25,185 | 108,5 |
 
-[HTTP original](reports/http_original.json) e [HTTP ONNX](reports/http_optimized.json).
-O p50 melhorou, mas o p95 HTTP piorou nessa medição. Não alegamos melhoria
-em todos os percentis. Throughput é sequencial, não teste de saturação,
-SLA de produção ou garantia de resultado em outra máquina.
+Esse ensaio HTTP tem uma rodada por variante; não é um teste de carga nem garante o mesmo ganho em outras máquinas. O gate usa as três rodadas de inferência isolada. Reprodução:
 
-## Monitoramento e Airflow
+1. Defina `MODEL_VARIANT=original` no `.env` e recrie apenas a API.
+2. Execute `make api-benchmark`.
+3. Defina `MODEL_VARIANT=optimized`, recrie a API e repita.
 
-~~~powershell
-make compose
-make smoke
-make airflow
-docker compose -f docker/docker-compose.yml exec -T airflow airflow dags trigger retrain_medical_classifier
-docker compose -f docker/docker-compose.yml exec -T airflow airflow dags list-runs -d retrain_medical_classifier
-docker compose -f docker/docker-compose.yml --profile airflow ps
-~~~
+```text
+docker compose --env-file .env -f docker/docker-compose.yml up -d --force-recreate --wait api
+```
 
-| Serviço | Endereço | Acesso local |
-|---|---|---|
-| API | [OpenAPI](http://localhost:8000/docs) | Sem login |
-| Prometheus | [localhost:9090](http://localhost:9090) | Sem login |
-| Grafana | [Dashboard](http://localhost:3000/d/medical-classifier) | `admin` / `GRAFANA_ADMIN_PASSWORD` |
-| Airflow | [localhost:8080](http://localhost:8080) | `admin` / senha gerada pelo standalone |
+Não rode builds, notebook ou retreino simultaneamente ao comparar latência. Resultados variam com a máquina. `make benchmark` repete a medição isolada e salva inclusive resultados rejeitados.
 
-O exemplo usa Grafana `admin/admin`, **somente para demonstração local**.
-Em volume já inicializado, alterar a variável não redefine a senha existente.
-Para ler a senha do Airflow localmente, sem publicá-la:
+## Monitoramento
 
-~~~powershell
-docker compose -f docker/docker-compose.yml exec -T airflow cat /opt/airflow/standalone_admin_password.txt
-~~~
+O [dashboard provisionado](docker/grafana/provisioning/dashboards/medical-classifier.json) tem quatro painéis: requisições, p50/p95 HTTP, falhas internas de inferência/s e proporção de respostas 4xx/5xx. `make smoke` gera sucessos e entradas inválidas durante várias coletas e consulta cada painel através do próprio Grafana; a [evidência](reports/stack_verification.json) registra respostas e target UP.
 
-Portas vinculadas a `127.0.0.1`. Não exponha esta stack à Internet:
-não há autenticação clínica, TLS ou hardening de produção.
+Métricas: `medical_classifier_requests_total`, `medical_classifier_request_duration_seconds` e `medical_classifier_prediction_errors_total`. Scrapes não contam como tráfego; rotas desconhecidas são agrupadas para limitar cardinalidade. Nenhum laudo é usado como label de métrica. Erros de classificação não são erros HTTP: **estes painéis medem saúde operacional, não segurança clínica**. Os quantis são estimativas dos buckets; sem tráfego recente podem ficar sem valores.
 
-Prometheus coleta a cada cinco segundos. O dashboard provisionado apresenta
-total de predições, p50/p95, taxa de falhas internas e proporção de respostas
-4xx/5xx. Scraping não aumenta os contadores. `make smoke` gera sucessos e erros
-de validação, verifica readiness, target e **consultas dos painéis através do Grafana**.
-Sem tráfego recente, taxas voltam a zero e percentis podem ficar sem dados;
-gere novas requisições.
+## Retreino no Airflow
 
-A DAG chama os seis comandos reutilizáveis: validar, treinar, exportar,
-avaliar, medir e publicar. Uma execução real está em
-[evidência Airflow](reports/airflow_verification.json);
-a stack está em [consultas verificadas](reports/stack_verification.json).
-Standalone/SQLite serve à demonstração, não à produção.
+```text
+docker compose --env-file .env -f docker/docker-compose.yml --profile airflow up --build -d --wait
+docker compose --env-file .env -f docker/docker-compose.yml exec airflow airflow dags trigger retrain_medical_classifier
+```
 
-Para parar sem apagar dados:
+Gere os CSVs antes de iniciar. O perfil opcional usa Airflow standalone em container e um ambiente separado para as dependências de ML. Para obter a senha gerada, consulte localmente `/opt/airflow/standalone_admin_password.txt` dentro do container; não a publique.
 
-~~~powershell
-docker compose -f docker/docker-compose.yml --profile airflow stop
-~~~
+[DAG](dags/retrain_medical_classifier.py):
 
-## Qualidade e CI
+```text
+validate → train → optimize → evaluate → benchmark → publish
+```
 
-~~~powershell
-make lint
-make test
-uv pip check
-docker build -f docker/Dockerfile -t medical-classifier:ci .
-uv run --frozen python scripts/smoke_image.py
-~~~
+Cada tarefa chama o módulo reutilizável correspondente. Valida três classes, origem e isolamento; treina candidato sem tocar no teste; exporta ONNX; avalia; mede equivalência/latência; publica. Não há geração de novos cenários durante o retreino: os mesmos dados versionados por hash são reusados. A execução é manual, sem agendamento e sem runs concorrentes da mesma DAG.
 
-GitHub Actions em pushes e PRs: Ruff e formatação, pytest, consistência de
-dependências, build da API, smoke Docker com fixture sintética, build do Airflow
-e importação real da DAG. A CI não recebe CSVs locais e não apresenta tempos
-sintéticos como evidência de otimização. O gate real está no pipeline e na DAG.
+`models/releases` guarda releases imutáveis; `models/current.json` troca atomicamente. Uma falha preserva a publicação anterior. O candidato do Airflow e seus relatórios locais usam pastas próprias, separadas do treino CLI. Releases de joblib devem ser locais e confiáveis; não carregue arquivos enviados por terceiros.
 
-Testes cobrem dados, grupos, conflitos, baseline, paridade, rejeição de benchmark,
-publicação, corrupção, fallback, API, readiness, métricas e infraestrutura.
-O smoke temporário remove apenas seu próprio container e fixture.
+A API mantém uma release por processo. Após retreino concluído, reinicie-a para adotar o novo ponteiro:
 
-O notebook executou em kernel limpo; sete gráficos foram inspecionados.
-As consultas reais do Grafana passaram; a captura visual automatizada da página
-não ocorreu porque o navegador de automação não inicializou. Não alegamos
-screenshots inexistentes.
+```text
+docker compose --env-file .env -f docker/docker-compose.yml restart api
+```
 
-## Arquitetura e decisão AWS
+O [registro de aceitação do Airflow](reports/airflow_verification.json) identifica o run, estados das seis tarefas e benchmark no Linux do container. Uma importação da DAG não substitui essa execução real.
 
-~~~mermaid
-flowchart LR
-    CSV[CSVs locais] --> VALID[Validação]
-    VALID --> TRAIN[Treino por grupos]
-    TRAIN --> ONNX[Exportação ONNX]
-    ONNX --> EVAL[Avaliação e benchmark]
-    EVAL --> REL[Release aprovada]
-    REL --> API[FastAPI em Docker]
-    API --> PROM[Prometheus]
-    PROM --> GRAF[Grafana]
-    AIR[Airflow opcional] -. mesmos comandos .-> VALID
-~~~
+Run verificado: `acceptance-synthetic-urgency-20260916`, com seis sucessos pelo scheduler. Para registrar um run recém-concluído, antes de iniciar outro: `uv run --frozen python scripts/verify_airflow_run.py <run_id>`. A verificação confere o horário do benchmark e sua correspondência com a release publicada.
 
-**Somente documentado:** para serviço real-time contínuo, escolher AWS ECS
-Fargate com ALB HTTPS, imagem no ECR e release versionada carregada de S3.
-Fargate evita gerenciar servidores; ECS permite escala por métricas.
-Referências: [Fargate](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/AWS_Fargate.html)
-e [Service Auto Scaling](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-auto-scaling.html).
+## CI e organização
 
-A escolha favorece processos aquecidos e controle da imagem, sem garantir menor
-custo que funções sob demanda. Produção ainda exige IAM mínimo, segredos,
-TLS, autenticação, rate limiting, varredura de vulnerabilidades, alertas,
-rollback, testes de carga, privacidade e validação do domínio. Observabilidade
-gerenciada pode substituir a stack local. Airflow standalone exige substituição
-por uma implantação adequada. Nada disso foi provisionado.
+[GitHub Actions](.github/workflows/ci.yml), em pushes e PRs:
 
-## Roteiro STAR — até cinco minutos
+- `quality`: instalação congelada, Ruff/formatação, pytest e compatibilidade de dependências.
+- `docker-build`: build e smoke HTTP real em container, com fixture sintética; valida também Compose.
+- `airflow-contract`: build da imagem e importação real da DAG, sem scheduler na CI.
 
-| Tempo | Fala e demonstração |
-|---|---|
-| 0:00–0:40 — Situação | “Organizar resumos médicos em cinco categorias, sem diagnóstico ou decisão de urgência.” Mostrar escopo e classes. |
-| 0:40–1:15 — Tarefa | “Entregar inferência conteinerizada, automação, monitoramento e otimização medida.” Mostrar requisitos, issues e Kanban. |
-| 1:15–2:05 — Ação: dados | Mostrar EDA: 34,97% de overlap, conflitos, validação por grupos e matriz de confusão. Explicar as populações das métricas. |
-| 2:05–2:50 — Ação: API | Fazer POST em /docs e mostrar /health. Explicar Factory/Strategy, passagem única e aprovação de artefatos. |
-| 2:50–3:35 — Ação: automação | Mostrar CI verde e DAG com seis tarefas concluídas; explicar candidato e publicação condicionada. |
-| 3:35–4:15 — Ação: monitoramento | Gerar tráfego com make smoke e mostrar volume, latência e erros no Grafana. |
-| 4:15–5:00 — Resultado | Mostrar redução de p50 e paridade; reconhecer p95 HTTP observado, limitações dos dados e decisão AWS apenas documentada. |
+Testes não precisam dos CSVs privados nem do Airflow instalado no host. O benchmark de produção é executado fora da CI compartilhada, onde ruído de CPU não deve alterar automaticamente uma decisão de publicação. A CI testa também a lógica do gate.
 
-**Vídeo pendente do autor:** gravar e incluir o link na issue #6. A entrega
-acadêmica não está integralmente concluída enquanto isso faltar.
+Validação local da revisão: 51 testes aprovados, Ruff e dependências compatíveis. Há um aviso de depreciação do cliente HTTP de testes, sem falha de compatibilidade; as versões atuais permanecem fixadas no lock.
 
-## Evidências por critério da rubrica
+Código coeso: Factory no carregamento de variantes e Strategy nos adaptadores scikit-learn/ONNX. Pipeline de treino centralizado; tarefas de orquestração não duplicam a lógica de ML. Configuração via `.env` e Pydantic Settings; dependências separadas e `uv.lock` commitado.
 
-| Critério | Peso | Evidência |
+Rastreabilidade: [issues](https://github.com/ygormartinelli/tech-challenge-fase-3/issues), [Kanban](https://github.com/users/ygormartinelli/projects/1), milestone **Tech Challenge Fase 3**. A [issue #8](https://github.com/ygormartinelli/tech-challenge-fase-3/issues/8) registra a correção do alvo, autorização sintética e nova aceitação; as conclusões antigas de categorias não validam urgência.
+
+## Decisão arquitetural de nuvem — proposta, não implantada
+
+Para uma futura API validada, a escolha proposta é **inferência real-time em AWS ECS Fargate**, pois o fluxo descrito espera resposta a cada envio de laudo; batch fica restrito ao treino e às análises. A AWS documenta execução de containers sem gerenciar servidores e integração com balanceamento HTTP/HTTPS. [Documentação oficial](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/AWS_Fargate.html).
+
+Arquitetura proposta: cliente autenticado → balanceador HTTPS → serviço FastAPI no ECS/Fargate; imagem no ECR, artefatos versionados em S3 e retreino separado. Essa topologia é uma decisão de projeto, **não algo provisionado ou validado neste trabalho**. A passagem à produção exigiria autorização clínica, governança dos dados, controle de acesso, criptografia, observabilidade, revisão de segurança, teste de carga, política de atualização e custos. Não há benefício assistencial medido nem SLA comprovado.
+
+## Rubrica e roteiro STAR
+
+| Critério | Peso | Evidência / limite |
 |---|---:|---|
-| Modelo e otimização | 20% | [EDA](docs/eda.md), [avaliação](reports/evaluation.json), [benchmark](reports/latency_benchmark.json) |
-| CI/CD | 15% | [Workflow](.github/workflows/ci.yml) e [execuções](https://github.com/ygormartinelli/tech-challenge-fase-3/actions) |
-| Airflow | 15% | [DAG](dags/retrain_medical_classifier.py) e [execução real](reports/airflow_verification.json) |
-| Monitoramento | 20% | [Compose](docker/docker-compose.yml), [dashboard](docker/grafana/provisioning/dashboards/medical-classifier.json), [consultas](reports/stack_verification.json) |
-| Documentação | 15% | Este README: reprodução, resultados, arquitetura, limitações e roteiro |
-| Vídeo STAR | 15% | Pendente de gravação pelo autor e link na issue #6 |
+| Modelagem e otimização | 20% | EDA, três urgências sintéticas, avaliação com erros, joblib/ONNX, benchmark com gate; sem validade clínica |
+| CI/CD | 15% | Workflow lint → testes → builds/smokes; sem deploy de nuvem |
+| Airflow | 15% | DAG com seis etapas e registro do scheduler |
+| Monitoramento | 20% | Compose, dashboard JSON com quatro painéis e consultas verificadas |
+| README | 15% | Execução, decisão arquitetural, contrato, adaptação e limitações |
+| Vídeo STAR | 15% | Roteiro abaixo; gravação e link ainda dependem do autor |
+
+Roteiro de **4min50s**, deixando 10 segundos de margem:
+
+| Tempo | STAR | Fala e evidência a mostrar |
+|---|---|---|
+| 0:00–0:40 | Situation | “O enunciado propõe classificar urgência em laudos. O corpus sugerido tem doenças, não urgência. Adaptamos com dados sintéticos explicitamente identificados; não é triagem clínica.” Mostrar o aviso do README. |
+| 0:40–1:15 | Task | “Entregar uma API com três níveis e comprovar CI/CD, retreino, monitoramento e ganho de latência.” Mostrar estrutura e issue #8. |
+| 1:15–2:00 | Action | Explicar 75 cenários, 2.700/600 redações, separação por cenário e TF-IDF + regressão logística. Mostrar EDA e matriz de erros. |
+| 2:00–2:40 | Action | Enviar texto fictício em `/docs`; mostrar urgência, variante e disclaimer. Apresentar brevemente Factory/Strategy e proteção contra releases antigas. |
+| 2:40–3:30 | Action | Mostrar run Airflow com seis tarefas e checks do GitHub Actions; explicar publicação após o gate e restart da API. |
+| 3:30–4:15 | Result | Mostrar Grafana com tráfego e relatório de latência. Explicar a diferença entre inferência isolada e HTTP, equivalência ONNX e ausência de quantização. |
+| 4:15–4:50 | Result | “O ciclo técnico funciona. No teste sintético, 22/30 cenários corretos e três urgentes subestimados. Não há validade clínica; dados reais anotados e validação externa seriam necessários.” Encerrar com aprendizados e proposta AWS, não deploy. |
+
+**Vídeo:** ainda não gravado. O PPT local anterior descreve cinco categorias e está desatualizado; não deve ser usado como evidência desta versão. O roteiro acima é o material atualizado para a gravação.
+
+## Resolução de problemas e encerramento
+
+- API 503: execute o pipeline completo e confira o manifesto da release; um modelo antigo de doenças é rejeitado por projeto.
+- Falha de download no build: confira conectividade e repita; não ignore erro de instalação ou remova o lock.
+- Airflow sem dados: execute `make generate` e confira o volume de `data/synthetic_triage`.
+- Grafana sem curva: execute `make smoke` e espere coletas com tráfego; janela padrão de 15 minutos.
+- Benchmark rejeitado: examine o relatório; não force `optimized_approved`. A API anterior continua disponível até uma publicação válida.
+- Sem `make`: use os comandos Python equivalentes descritos acima.
+
+```text
+docker compose --env-file .env -f docker/docker-compose.yml --profile airflow down
+```
+
+O comando preserva os volumes. Não use `down -v` se quiser manter o histórico local. O [notebook original de categorias](notebooks/01_eda_medical_abstracts.ipynb) e os relatórios antigos de diagnóstico são históricos do corpus sugerido, não resultados da versão de urgência.

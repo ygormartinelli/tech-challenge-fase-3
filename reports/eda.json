@@ -1,286 +1,270 @@
 {
   "train": {
-    "rows": 11550,
+    "rows": 2700,
     "columns": [
-      "condition_label",
-      "medical_abstract"
+      "report_text",
+      "urgency_label",
+      "scenario_id",
+      "source_type",
+      "source_theme"
     ],
     "dtypes": {
-      "condition_label": "int64",
-      "medical_abstract": "object"
+      "report_text": "object",
+      "urgency_label": "int64",
+      "scenario_id": "object",
+      "source_type": "object",
+      "source_theme": "object"
     },
     "nulls": {
-      "condition_label": 0,
-      "medical_abstract": 0
+      "report_text": 0,
+      "urgency_label": 0,
+      "scenario_id": 0,
+      "source_type": 0,
+      "source_theme": 0
     },
     "exact_duplicate_rows": 0,
-    "unique_texts": 9445,
-    "duplicate_text_rows_beyond_first": 2105,
-    "conflicting_text_groups": 1956,
-    "rows_in_conflicting_groups": 4061,
+    "unique_texts": 2700,
+    "duplicate_text_rows_beyond_first": 0,
+    "conflicting_text_groups": 0,
+    "rows_in_conflicting_groups": 0,
     "characters": {
-      "count": 11550.0,
-      "mean": 1229.104155844156,
-      "std": 505.96098186539007,
-      "min": 170.0,
-      "1%": 311.0,
-      "5%": 441.0,
-      "50%": 1208.0,
-      "95%": 2049.0,
-      "99%": 2570.0,
-      "max": 3999.0
+      "count": 2700.0,
+      "mean": 146.51111111111112,
+      "std": 10.901061786795616,
+      "min": 116.0,
+      "1%": 123.0,
+      "5%": 128.0,
+      "50%": 147.0,
+      "95%": 165.0,
+      "99%": 171.0,
+      "max": 177.0
     },
     "words": {
-      "count": 11550.0,
-      "mean": 179.64060606060605,
-      "std": 76.3697757005607,
-      "min": 24.0,
-      "1%": 43.0,
-      "5%": 62.0,
-      "50%": 175.0,
-      "95%": 302.0,
-      "99%": 381.5100000000002,
-      "max": 596.0
+      "count": 2700.0,
+      "mean": 19.044444444444444,
+      "std": 1.9162404012895011,
+      "min": 13.0,
+      "1%": 15.0,
+      "5%": 16.0,
+      "50%": 19.0,
+      "95%": 22.0,
+      "99%": 23.0,
+      "max": 25.0
     },
     "outside_api_length": 0
   },
   "test": {
-    "rows": 2888,
+    "rows": 600,
     "columns": [
-      "condition_label",
-      "medical_abstract"
+      "report_text",
+      "urgency_label",
+      "scenario_id",
+      "source_type",
+      "source_theme"
     ],
     "dtypes": {
-      "condition_label": "int64",
-      "medical_abstract": "object"
+      "report_text": "object",
+      "urgency_label": "int64",
+      "scenario_id": "object",
+      "source_type": "object",
+      "source_theme": "object"
     },
     "nulls": {
-      "condition_label": 0,
-      "medical_abstract": 0
+      "report_text": 0,
+      "urgency_label": 0,
+      "scenario_id": 0,
+      "source_type": 0,
+      "source_theme": 0
     },
     "exact_duplicate_rows": 0,
-    "unique_texts": 2770,
-    "duplicate_text_rows_beyond_first": 118,
-    "conflicting_text_groups": 113,
-    "rows_in_conflicting_groups": 231,
+    "unique_texts": 600,
+    "duplicate_text_rows_beyond_first": 0,
+    "conflicting_text_groups": 0,
+    "rows_in_conflicting_groups": 0,
     "characters": {
-      "count": 2888.0,
-      "mean": 1236.907894736842,
-      "std": 512.8969366050079,
-      "min": 186.0,
-      "1%": 315.0,
-      "5%": 435.0,
-      "50%": 1221.5,
-      "95%": 2053.2500000000005,
-      "99%": 2640.6500000000005,
-      "max": 3542.0
+      "count": 600.0,
+      "mean": 139.5,
+      "std": 8.502381086509457,
+      "min": 118.0,
+      "1%": 123.0,
+      "5%": 127.0,
+      "50%": 138.0,
+      "95%": 155.04999999999995,
+      "99%": 165.0,
+      "max": 168.0
     },
     "words": {
-      "count": 2888.0,
-      "mean": 181.12292243767314,
-      "std": 77.26735164960526,
-      "min": 29.0,
-      "1%": 43.870000000000005,
-      "5%": 61.0,
-      "50%": 179.0,
-      "95%": 303.0,
-      "99%": 391.2600000000002,
-      "max": 528.0
+      "count": 600.0,
+      "mean": 18.033333333333335,
+      "std": 1.7351003364411193,
+      "min": 13.0,
+      "1%": 14.0,
+      "5%": 15.0,
+      "50%": 18.0,
+      "95%": 21.0,
+      "99%": 23.0,
+      "max": 24.0
     },
     "outside_api_length": 0
   },
   "classes": [
     {
+      "label": 0,
+      "name": "normal",
+      "train": 900,
+      "test": 200,
+      "train_share": 0.3333333333333333,
+      "test_share": 0.3333333333333333,
+      "share_difference_pp": 0.0
+    },
+    {
       "label": 1,
-      "name": "neoplasms",
-      "train": 2530,
-      "test": 633,
-      "train_share": 0.21904761904761905,
-      "test_share": 0.21918282548476453,
-      "share_difference_pp": 0.01352064371454853
+      "name": "atenção",
+      "train": 900,
+      "test": 200,
+      "train_share": 0.3333333333333333,
+      "test_share": 0.3333333333333333,
+      "share_difference_pp": 0.0
     },
     {
       "label": 2,
-      "name": "digestive system diseases",
-      "train": 1195,
-      "test": 299,
-      "train_share": 0.10346320346320347,
-      "test_share": 0.10353185595567867,
-      "share_difference_pp": 0.006865249247520189
-    },
-    {
-      "label": 3,
-      "name": "nervous system diseases",
-      "train": 1540,
-      "test": 385,
-      "train_share": 0.13333333333333333,
-      "test_share": 0.13331024930747923,
-      "share_difference_pp": -0.0023084025854103185
-    },
-    {
-      "label": 4,
-      "name": "cardiovascular diseases",
-      "train": 2441,
-      "test": 610,
-      "train_share": 0.21134199134199133,
-      "test_share": 0.21121883656509696,
-      "share_difference_pp": -0.01231547768943686
-    },
-    {
-      "label": 5,
-      "name": "general pathological conditions",
-      "train": 3844,
-      "test": 961,
-      "train_share": 0.33281385281385284,
-      "test_share": 0.3327562326869806,
-      "share_difference_pp": -0.0057620126872215405
+      "name": "urgente",
+      "train": 900,
+      "test": 200,
+      "train_share": 0.3333333333333333,
+      "test_share": 0.3333333333333333,
+      "share_difference_pp": 0.0
     }
   ],
   "overlap": {
-    "test_rows_seen_in_train": 1010,
-    "test_seen_share": 0.3497229916897507,
-    "test_unseen_rows": 1878,
-    "shared_text_groups": 988,
-    "combined_unique_texts": 11227,
-    "combined_conflicting_groups": 2929,
-    "single_label_empirical_accuracy_ceiling": 0.7776007757307106,
+    "test_rows_seen_in_train": 0,
+    "test_seen_share": 0.0,
+    "test_unseen_rows": 600,
+    "shared_text_groups": 0,
+    "combined_unique_texts": 3300,
+    "combined_conflicting_groups": 0,
+    "single_label_empirical_accuracy_ceiling": 1.0,
     "label_cooccurrence": [
       [
-        3163,
-        204,
-        190,
-        101,
-        619
+        1100,
+        0,
+        0
       ],
       [
-        204,
-        1494,
-        56,
-        68,
-        603
+        0,
+        1100,
+        0
       ],
       [
-        190,
-        56,
-        1925,
-        197,
-        591
-      ],
-      [
-        101,
-        68,
-        197,
-        3051,
-        870
-      ],
-      [
-        619,
-        603,
-        591,
-        870,
-        4805
+        0,
+        0,
+        1100
       ]
     ]
   },
   "distribution": {
-    "character_length_ks_statistic": 0.01737471669604629,
-    "character_length_ks_pvalue": 0.4829294218042238,
-    "caveat": "Textos repetidos violam independência; não é teste confirmatório de drift.",
-    "temporal_analysis": "Indisponível: não há datas, pacientes, hospitais ou origem por linha."
+    "character_length_ks_statistic": 0.30907407407407406,
+    "character_length_ks_pvalue": 5.465643990489445e-42,
+    "caveat": "Variações de cenários violam independência; KS apenas exploratório.",
+    "temporal_analysis": "Sem datas, pacientes, hospitais ou origem por linha."
   },
   "lexical": {
-    "vocabulary_size": 20000,
+    "vocabulary_size": 233,
     "top_mean_tfidf_terms_by_class": {
+      "0": [
+        "de",
+        "sem",
+        "exame",
+        "ou",
+        "do",
+        "estudo",
+        "avaliação",
+        "não",
+        "alteração",
+        "achados",
+        "dos",
+        "descrição"
+      ],
       "1": [
-        "patients",
-        "cancer",
-        "tumor",
-        "cell",
-        "carcinoma",
-        "tumors",
-        "cells",
-        "cases",
-        "survival",
-        "breast",
-        "treatment",
-        "disease"
+        "sem",
+        "estável",
+        "do",
+        "exame",
+        "achados",
+        "espessamento",
+        "descrição",
+        "de",
+        "ou",
+        "avaliação",
+        "discreta",
+        "dos"
       ],
       "2": [
-        "patients",
-        "disease",
-        "liver",
-        "hepatitis",
-        "gastric",
-        "esophageal",
-        "bowel",
-        "biliary",
-        "treatment",
-        "ulcer",
-        "patient",
-        "hepatic"
-      ],
-      "3": [
-        "patients",
-        "pain",
-        "brain",
-        "cerebral",
-        "syndrome",
-        "stroke",
-        "disease",
-        "nerve",
-        "treatment",
-        "patient",
-        "group",
-        "clinical"
-      ],
-      "4": [
-        "patients",
-        "coronary",
-        "pressure",
-        "ventricular",
-        "artery",
-        "blood",
-        "heart",
-        "hypertension",
-        "myocardial",
-        "left",
-        "cardiac",
-        "group"
-      ],
-      "5": [
-        "patients",
-        "group",
-        "treatment",
-        "disease",
-        "cases",
-        "acute",
-        "patient",
-        "years",
-        "syndrome",
-        "study",
-        "children",
-        "surgery"
+        "com",
+        "da",
+        "do",
+        "de",
+        "queda",
+        "exame",
+        "achados",
+        "compressão",
+        "extensa",
+        "volumoso",
+        "descrição",
+        "intensa"
       ]
     },
-    "train_sparsity": 0.996522922077922,
+    "train_sparsity": 0.924201239866476,
     "test_zero_vectors": 0,
-    "test_oov_token_share": 0.03288570837745875,
+    "test_oov_token_share": 0.14807692307692308,
     "near_duplicates": {
-      "method": "Cosseno TF-IDF unigramas, 20000 termos, min_df=2; ajustado no treino.",
+      "method": "Cosseno TF-IDF, 20000 unigramas, min_df=2; fit no treino.",
       "unseen_test_rows_similarity_ge_090": 0,
       "unseen_test_rows_similarity_ge_095": 0,
       "unseen_test_similarity_quantiles": [
-        0.13603605178397093,
-        0.35249978706972307,
-        0.5172271090889836,
-        0.5759230516612994,
-        0.8135825897947432
+        0.49398327185699664,
+        0.636389161219739,
+        0.7617025753207844,
+        0.7790494518577457,
+        0.8078843092716562
       ],
-      "caveat": "Similaridade lexical não prova identidade nem independência de pacientes."
+      "caveat": "Similaridade lexical não prova identidade de pacientes."
     }
   },
+  "scenarios": {
+    "train": 45,
+    "test": 30,
+    "shared": 0,
+    "train_variants_per_scenario": {
+      "count": 45.0,
+      "mean": 60.0,
+      "std": 0.0,
+      "min": 60.0,
+      "1%": 60.0,
+      "5%": 60.0,
+      "50%": 60.0,
+      "95%": 60.0,
+      "99%": 60.0,
+      "max": 60.0
+    },
+    "test_variants_per_scenario": {
+      "count": 30.0,
+      "mean": 20.0,
+      "std": 0.0,
+      "min": 20.0,
+      "1%": 20.0,
+      "5%": 20.0,
+      "50%": 20.0,
+      "95%": 20.0,
+      "99%": 20.0,
+      "max": 20.0
+    },
+    "source_type": "synthetic",
+    "clinically_validated": false,
+    "caveat": "Cenários autorais; não representam pacientes independentes reais."
+  },
   "environment": {
-    "created_at": "2026-09-15T13:01:44.800643+00:00",
+    "created_at": "2026-09-16T00:35:23.916692+00:00",
     "python": "3.11.15",
     "platform": "Windows-10-10.0.26200-SP0",
     "packages": {
@@ -291,9 +275,12 @@
       "skl2onnx": "1.20.0"
     }
   },
+  "task_id": "synthetic_urgency_v1",
+  "data_origin": "synthetic",
+  "clinically_validated": false,
   "sources": {
-    "medical_tc_train.csv": "ad53aebc682d6b87a5647f619a079bb446d286fdc93bf0159b812418f5758609",
-    "medical_tc_test.csv": "1eecea73c9ecad292c55e10403bd139fab9580545d6878482997c5564d51ac05",
-    "medical_tc_labels.csv": "8a27ae03339c798103678efa8012f744a723ff71a80f2b2c1355ee249564adc5"
+    "synthetic_triage_train.csv": "7482700fe0c5ffafd2902aea557704c7c5718cea979f19ff934d88a95576cad9",
+    "synthetic_triage_test.csv": "18ebf65a7535fa0a3588ded2a8bb289ccdb3603c0a3226ecc2d38a8e6caaec1d",
+    "synthetic_triage_labels.csv": "353a4b7e28000a11494d3cd4fc6b7755b4ecc3ff96583ceea5d962bcaba217ae"
   }
 }

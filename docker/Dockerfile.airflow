@@ -21,7 +21,7 @@ RUN uv sync --frozen --no-dev --group build --no-install-project --python /usr/l
     && pip check
 
 COPY --chown=airflow:0 dags /opt/airflow/dags
-ENV DATA_DIR=/opt/project/data/raw MODEL_DIR=/opt/project/models \
+ENV DATA_DIR=/opt/project/data/synthetic_triage MODEL_DIR=/opt/project/models \
     REPORT_DIR=/opt/airflow/reports/runtime/airflow CANDIDATE_NAME=airflow-candidate \
     LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 WORKDIR /opt/airflow

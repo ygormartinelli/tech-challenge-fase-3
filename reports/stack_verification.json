@@ -1,6 +1,6 @@
 {
   "environment": {
-    "created_at": "2026-09-15T14:07:59.245503+00:00",
+    "created_at": "2026-09-16T00:54:54.510999+00:00",
     "python": "3.11.15",
     "platform": "Windows-10-10.0.26200-SP0",
     "packages": {
@@ -13,7 +13,9 @@
   },
   "api_health": {
     "status": "ok",
-    "model_variant": "optimized"
+    "model_variant": "optimized",
+    "task_id": "synthetic_urgency_v1",
+    "data_origin": "synthetic"
   },
   "prometheus_target_up": true,
   "grafana_queries": [
@@ -21,21 +23,21 @@
       "panel": "Predições recebidas desde o início",
       "query": "sum(medical_classifier_requests_total{path=\"/predict\"}) or vector(0)",
       "values": [
-        24.0
+        244.0
       ]
     },
     {
       "panel": "Latência HTTP de /predict — p50 e p95",
       "query": "histogram_quantile(0.5, sum(rate(medical_classifier_request_duration_seconds_bucket{path=\"/predict\"}[1m])) by (le))",
       "values": [
-        0.001631578947368421
+        0.0017641738511914255
       ]
     },
     {
       "panel": "Latência HTTP de /predict — p50 e p95",
       "query": "histogram_quantile(0.95, sum(rate(medical_classifier_request_duration_seconds_bucket{path=\"/predict\"}[1m])) by (le))",
       "values": [
-        0.0024842105263157893
+        0.00425
       ]
     },
     {
@@ -49,7 +51,7 @@
       "panel": "Respostas HTTP 4xx/5xx em /predict (1 min)",
       "query": "(sum(rate(medical_classifier_requests_total{path=\"/predict\",status=~\"4..|5..\"}[1m])) or vector(0)) / clamp_min(sum(rate(medical_classifier_requests_total{path=\"/predict\"}[1m])), 0.000001)",
       "values": [
-        0.16666666666666669
+        0.14128865752088518
       ]
     }
   ]

@@ -16,13 +16,13 @@ from techchallenge_fase3.pipelines.benchmark import (
 def test_probabilities_and_tokenization_match(
     tmp_path: Path, sample_data: pd.DataFrame
 ) -> None:
-    """Testa dígitos, pontuação, caixa e Unicode, além das cinco classes."""
+    """Testa dígitos, pontuação, caixa e Unicode, além das três urgências."""
     model = train_model(sample_data)
     optimized = OnnxPredictor(export_onnx(model, tmp_path))
     report = equivalence(
         OriginalPredictor(model),
         optimized,
-        sample_data.medical_abstract.tolist() + EDGE_TEXTS,
+        sample_data.report_text.tolist() + EDGE_TEXTS,
     )
     assert report["passed"]
 

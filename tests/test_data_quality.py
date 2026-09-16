@@ -21,10 +21,18 @@ from techchallenge_fase3.modeling import grouped_holdout, validate_baseline
     ],
 )
 def test_invalid_values_rejected(label: object, text: object) -> None:
-    """Não permite classes inválidas nem abstracts ausentes ou não textuais."""
+    """Não permite classes inválidas nem laudos ausentes ou não textuais."""
     with pytest.raises(ValueError):
         validate_dataset(
-            pd.DataFrame({"condition_label": [label], "medical_abstract": [text]})
+            pd.DataFrame(
+                {
+                    "urgency_label": [label],
+                    "report_text": [text],
+                    "scenario_id": ["case-1"],
+                    "source_type": ["synthetic"],
+                    "source_theme": ["general"],
+                }
+            )
         )
 
 
@@ -37,7 +45,7 @@ def test_groups_normalize_case_whitespace_and_unicode() -> None:
 def test_conflicting_labels_are_not_silently_deduplicated() -> None:
     """Conta conflito por texto, mesmo sem linhas integralmente repetidas."""
     data = pd.DataFrame(
-        {"condition_label": [1, 2], "medical_abstract": ["Tumor cell", " tumor   cell"]}
+        {"urgency_label": [1, 2], "report_text": ["Tumor cell", " tumor   cell"]}
     )
     summary = profile(data)
     assert summary["exact_duplicate_rows"] == 0
@@ -54,7 +62,8 @@ def test_grouped_validation_has_no_shared_texts(sample_data: pd.DataFrame) -> No
     train, validation = grouped_holdout(data)
     assert not set(text_groups(train)) & set(text_groups(validation))
     assert len(train) + len(validation) == len(data)
-    assert set(validation.condition_label) == {1, 2, 3, 4, 5}
+    assert set(validation.urgency_label) == {0, 1, 2}
+    assert not set(train.scenario_id) & set(validation.scenario_id)
     assert train.index.equals(grouped_holdout(data)[0].index)
 
 

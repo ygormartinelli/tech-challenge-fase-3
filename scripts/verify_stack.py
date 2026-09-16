@@ -43,13 +43,14 @@ def grafana_headers() -> dict[str, str]:
 
 def generate_traffic() -> None:
     """Gera sucessos e 422 durante três coletas para habilitar taxas."""
-    payload = {"medical_abstract": "Tumor cells were investigated in cancer treatment."}
+    payload = {"report_text": "Exame sem alterações agudas ou sinais de complicação."}
     for _ in range(4):
         for _ in range(5):
             result = read_json(API + "/predict", payload=payload)
-            assert result["condition_label"] in range(1, 6)
+            assert result["urgency_label"] in range(3)
+            assert result["data_origin"] == "synthetic"
         try:
-            read_json(API + "/predict", payload={"medical_abstract": " "})
+            read_json(API + "/predict", payload={"report_text": " "})
         except HTTPError as error:
             assert error.code == 422
         else:

@@ -2,28 +2,21 @@
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from techchallenge_fase3.artifacts import OnnxPredictor, export_onnx, save_original
 from techchallenge_fase3.modeling import predictions_match, train_model
 
 
-def test_onnx_predictions_match_original(tmp_path: Path) -> None:
+def test_onnx_predictions_match_original(
+    tmp_path: Path, sample_data: pd.DataFrame
+) -> None:
     """Preserva os rótulos ao converter um pipeline para ONNX."""
-    dataset = pd.DataFrame(
-        {
-            "condition_label": [1, 1, 2, 2],
-            "medical_abstract": [
-                "tumor cell",
-                "cancer cell",
-                "colon bowel",
-                "liver bowel",
-            ],
-        }
-    )
-    model = train_model(dataset)
+    model = train_model(sample_data)
     save_original(model, tmp_path)
     onnx_path = export_onnx(model, tmp_path)
-    texts = ["tumor cancer", "bowel colon"]
-    onnx_predictions = OnnxPredictor(onnx_path).predict(texts)
-    assert predictions_match(model.predict(texts), onnx_predictions)
+    texts = sample_data.report_text.tolist() + ["EXAME SEM ALTERAÇÕES agudas."]
+    labels, probabilities = OnnxPredictor(onnx_path).predict_batch(texts)
+    assert predictions_match(model.predict(texts), labels)
+    np.testing.assert_allclose(model.predict_proba(texts), probabilities, atol=1e-5)

@@ -3,24 +3,11 @@
 import pandas as pd
 import pytest
 
+from techchallenge_fase3.pipelines.generate import build_datasets
+
 
 @pytest.fixture
 def sample_data() -> pd.DataFrame:
-    """Fornece grupos suficientes em cada uma das cinco categorias."""
-    terms = {
-        1: "cancer tumor",
-        2: "bowel liver",
-        3: "brain nerve",
-        4: "heart coronary",
-        5: "general syndrome",
-    }
-    return pd.DataFrame(
-        [
-            {
-                "condition_label": label,
-                "medical_abstract": f"{text} study number{index}",
-            }
-            for label, text in terms.items()
-            for index in range(15)
-        ]
-    )
+    """Fornece os 45 cenários de treino, sem repetir suas variações."""
+    train, _ = build_datasets()
+    return train.drop_duplicates("scenario_id").reset_index(drop=True)

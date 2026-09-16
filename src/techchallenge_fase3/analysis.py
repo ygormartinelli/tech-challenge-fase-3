@@ -24,7 +24,7 @@ def length_summary(values: pd.Series) -> dict[str, float]:
 def profile(dataset: pd.DataFrame) -> dict[str, Any]:
     """Descreve o grão linha-texto-rótulo e a qualidade observada."""
     groups = text_groups(dataset)
-    counts = dataset.assign(key=groups).groupby("key").condition_label.nunique()
+    counts = dataset.assign(key=groups).groupby("key").urgency_label.nunique()
     return {
         "rows": len(dataset),
         "columns": list(dataset.columns),
@@ -37,10 +37,10 @@ def profile(dataset: pd.DataFrame) -> dict[str, Any]:
         "rows_in_conflicting_groups": int(
             groups.isin(counts[counts.gt(1)].index).sum()
         ),
-        "characters": length_summary(dataset.medical_abstract.str.len()),
-        "words": length_summary(dataset.medical_abstract.str.split().str.len()),
+        "characters": length_summary(dataset.report_text.str.len()),
+        "words": length_summary(dataset.report_text.str.split().str.len()),
         "outside_api_length": int(
-            (~dataset.medical_abstract.str.len().between(10, 20000)).sum()
+            (~dataset.report_text.str.len().between(10, 20000)).sum()
         ),
     }
 
@@ -49,7 +49,7 @@ def class_summary(train: pd.DataFrame, test: pd.DataFrame) -> list[dict[str, Any
     """Compara suportes e proporções com o mesmo denominador por partição."""
     rows = []
     for label, name in LABEL_NAMES.items():
-        counts = [int(frame.condition_label.eq(label).sum()) for frame in (train, test)]
+        counts = [int(frame.urgency_label.eq(label).sum()) for frame in (train, test)]
         rows.append(
             {
                 "label": label,
@@ -70,7 +70,7 @@ def overlap_summary(train: pd.DataFrame, test: pd.DataFrame) -> dict[str, Any]:
     train_keys, test_keys = text_groups(train), text_groups(test)
     combined = pd.concat([train, test], ignore_index=True)
     groups = combined.assign(key=text_groups(combined)).groupby("key")
-    label_counts = groups.condition_label.value_counts().unstack(fill_value=0)
+    label_counts = groups.urgency_label.value_counts().unstack(fill_value=0)
     overlap = test_keys.isin(set(train_keys))
     return {
         "test_rows_seen_in_train": int(overlap.sum()),
@@ -94,27 +94,27 @@ def cooccurrence(counts: pd.DataFrame) -> list[list[int]]:
 
 def distribution_checks(train: pd.DataFrame, test: pd.DataFrame) -> dict[str, Any]:
     """Compara forma dos comprimentos; o p-valor é apenas exploratório."""
-    train_lengths = train.medical_abstract.str.len()
-    test_lengths = test.medical_abstract.str.len()
+    train_lengths = train.report_text.str.len()
+    test_lengths = test.report_text.str.len()
     result = ks_2samp(train_lengths, test_lengths)
     return {
         "character_length_ks_statistic": float(result.statistic),
         "character_length_ks_pvalue": float(result.pvalue),
-        "caveat": "Duplicatas violam independência; KS apenas exploratório.",
+        "caveat": "Variações de cenários violam independência; KS apenas exploratório.",
         "temporal_analysis": "Sem datas, pacientes, hospitais ou origem por linha.",
     }
 
 
 def lexical_summary(train: pd.DataFrame, test: pd.DataFrame) -> dict[str, Any]:
     """Ajusta vocabulário somente no treino e mede cobertura no teste."""
-    vectorizer = TfidfVectorizer(stop_words="english", max_features=20000, min_df=2)
-    train_matrix = vectorizer.fit_transform(train.medical_abstract)
-    test_matrix = vectorizer.transform(test.medical_abstract)
+    vectorizer = TfidfVectorizer(max_features=20000, min_df=2)
+    train_matrix = vectorizer.fit_transform(train.report_text)
+    test_matrix = vectorizer.transform(test.report_text)
     features = vectorizer.get_feature_names_out()
     terms = {}
     for label in LABEL_NAMES:
         means = np.asarray(
-            train_matrix[train.condition_label.eq(label).to_numpy()].mean(axis=0)
+            train_matrix[train.urgency_label.eq(label).to_numpy()].mean(axis=0)
         ).ravel()
         terms[str(label)] = features[np.argsort(means)[-12:][::-1]].tolist()
     return {
@@ -122,7 +122,7 @@ def lexical_summary(train: pd.DataFrame, test: pd.DataFrame) -> dict[str, Any]:
         "top_mean_tfidf_terms_by_class": terms,
         "train_sparsity": 1 - train_matrix.nnz / np.prod(train_matrix.shape),
         "test_zero_vectors": int((test_matrix.getnnz(axis=1) == 0).sum()),
-        "test_oov_token_share": oov_share(vectorizer, test.medical_abstract),
+        "test_oov_token_share": oov_share(vectorizer, test.report_text),
         "near_duplicates": nearest_texts(train, test, train_matrix, test_matrix),
     }
 
@@ -169,4 +169,23 @@ def describe_corpus(train: pd.DataFrame, test: pd.DataFrame) -> dict[str, Any]:
         "overlap": overlap_summary(train, test),
         "distribution": distribution_checks(train, test),
         "lexical": lexical_summary(train, test),
+        "scenarios": scenario_summary(train, test),
+    }
+
+
+def scenario_summary(train: pd.DataFrame, test: pd.DataFrame) -> dict[str, Any]:
+    """Expõe o número efetivo de cenários, distinto das linhas expandidas."""
+    return {
+        "train": int(train.scenario_id.nunique()),
+        "test": int(test.scenario_id.nunique()),
+        "shared": len(set(train.scenario_id) & set(test.scenario_id)),
+        "train_variants_per_scenario": length_summary(
+            train.groupby("scenario_id").size()
+        ),
+        "test_variants_per_scenario": length_summary(
+            test.groupby("scenario_id").size()
+        ),
+        "source_type": "synthetic",
+        "clinically_validated": False,
+        "caveat": "Cenários autorais; não representam pacientes independentes reais.",
     }

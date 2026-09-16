@@ -5,6 +5,7 @@
 __pycache__/
 *.py[cod]
 data/raw/*.csv
+data/synthetic_triage/
 models/*
 !models/.gitkeep
 reports/runtime/

@@ -17,7 +17,7 @@ from techchallenge_fase3.artifacts import (
     optimized_path,
 )
 from techchallenge_fase3.config import Settings
-from techchallenge_fase3.data import load_dataset
+from techchallenge_fase3.data import TASK_ID, load_dataset
 from techchallenge_fase3.pipelines.api_benchmark import summarize_durations
 from techchallenge_fase3.reporting import environment, file_hash, write_json
 
@@ -26,12 +26,12 @@ WARMUP_ITERATIONS = 20
 ROUNDS = 3
 PROBABILITY_TOLERANCE = 1e-5
 EDGE_TEXTS = [
-    "Tumor cells, cancer: treatment! 123.",
-    "CARDIOVASCULAR disease\nheart\tpressure",
-    "café naïve β receptor and tumor cells",
+    "Não há hemorragia ou sinais de obstrução. Exame sem alterações.",
+    "HEMORRAGIA EXTENSA\nchoque\tperda de consciência",
+    "café naïve β pressão e compressão medular",
     "unknownwordzzzz",
-    "  bowel    digestive  disease  ",
-    "delta f508 mutations; tumor tumor tumor; x 1 y heart",
+    "  cálculo    vesicular sem inflamação  ",
+    "lesão estável; lesão lesão lesão; x 1 y exame",
 ]
 
 
@@ -117,7 +117,7 @@ def quantization_assessment(path: Path) -> dict[str, Any]:
 def build_report(settings: Settings) -> dict[str, Any]:
     """Usa o teste completo para paridade e amostra fixa para latência."""
     dataset = load_dataset(settings.test_path)
-    texts = dataset.medical_abstract.tolist()
+    texts = dataset.report_text.tolist()
     rng = np.random.default_rng(42)
     sample = [
         texts[index]
@@ -126,6 +126,8 @@ def build_report(settings: Settings) -> dict[str, Any]:
     first = OriginalPredictor(load_original(settings.candidate_dir))
     second = OnnxPredictor(optimized_path(settings.candidate_dir))
     return {
+        "task_id": TASK_ID,
+        "data_origin": "synthetic",
         "environment": environment(),
         "seed": 42,
         "iterations_per_round": ITERATIONS,

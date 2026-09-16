@@ -2,7 +2,7 @@
 
 from techchallenge_fase3.analysis import describe_corpus
 from techchallenge_fase3.config import Settings
-from techchallenge_fase3.data import load_dataset, load_label_names
+from techchallenge_fase3.data import TASK_ID, load_dataset, load_label_names
 from techchallenge_fase3.reporting import environment, file_hash, write_json
 
 
@@ -14,6 +14,7 @@ def main() -> None:
         load_dataset(settings.train_path), load_dataset(settings.test_path)
     )
     report["environment"] = environment()
+    report.update(task_id=TASK_ID, data_origin="synthetic", clinically_validated=False)
     report["sources"] = {
         path.name: file_hash(path)
         for path in (settings.train_path, settings.test_path, settings.labels_path)

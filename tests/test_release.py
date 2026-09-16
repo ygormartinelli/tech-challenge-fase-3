@@ -8,6 +8,7 @@ import pytest
 
 from techchallenge_fase3.artifacts import export_onnx, load_predictor, save_original
 from techchallenge_fase3.config import Settings
+from techchallenge_fase3.data import TASK_ID
 from techchallenge_fase3.modeling import train_model
 from techchallenge_fase3.pipelines.publish import publish
 from techchallenge_fase3.reporting import file_hash, write_json
@@ -28,6 +29,8 @@ def candidate(tmp_path: Path, sample_data: pd.DataFrame) -> Settings:
     export_onnx(model, settings.candidate_dir)
     hashes = {path.name: file_hash(path) for path in settings.candidate_dir.iterdir()}
     report = {
+        "task_id": TASK_ID,
+        "data_origin": "synthetic",
         "model_hashes": hashes,
         "optimized_approved": True,
         "test_sha256": file_hash(settings.test_path),
@@ -40,6 +43,8 @@ def candidate(tmp_path: Path, sample_data: pd.DataFrame) -> Settings:
     write_json(
         settings.report_dir / "evaluation.json",
         {
+            "task_id": TASK_ID,
+            "data_origin": "synthetic",
             "model_sha256": hashes["classifier.joblib"],
             "test_sha256": report["test_sha256"],
         },
@@ -53,7 +58,7 @@ def test_published_models_load_and_tampering_is_rejected(candidate: Settings) ->
     release = publish(candidate)
     predictor, variant = load_predictor(candidate.model_dir, "optimized")
     assert variant == "optimized"
-    assert predictor.predict_batch(["tumor cancer"])[1].shape == (1, 5)
+    assert predictor.predict_batch(["Exame sem alterações."])[1].shape == (1, 3)
     manifest = json.loads((release / "manifest.json").read_text())
     manifest["optimized_approved"] = False
     write_json(release / "manifest.json", manifest)
@@ -80,3 +85,13 @@ def test_missing_model_and_path_escape_are_rejected(tmp_path: Path) -> None:
     write_json(tmp_path / "current.json", {"release": "../outside"})
     with pytest.raises(ValueError, match="Invalid release path"):
         load_predictor(tmp_path, "optimized")
+
+
+def test_legacy_disease_model_cannot_serve_urgency(candidate: Settings) -> None:
+    """Uma release antiga não se transforma em urgência por renomear a API."""
+    release = publish(candidate)
+    manifest = json.loads((release / "manifest.json").read_text())
+    manifest.pop("task_id")
+    write_json(release / "manifest.json", manifest)
+    with pytest.raises(ValueError, match="task"):
+        load_predictor(candidate.model_dir, "optimized")

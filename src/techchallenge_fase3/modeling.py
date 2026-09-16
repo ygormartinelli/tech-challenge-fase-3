@@ -11,7 +11,12 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.model_selection import StratifiedGroupKFold
 from sklearn.pipeline import Pipeline
 
-from techchallenge_fase3.data import LABEL_NAMES, text_groups
+from techchallenge_fase3.data import (
+    LABEL_NAMES,
+    scenario_groups,
+    text_groups,
+    validate_dataset,
+)
 
 
 def build_pipeline() -> Pipeline:
@@ -31,14 +36,17 @@ def build_pipeline() -> Pipeline:
 
 def train_model(dataset: pd.DataFrame) -> Pipeline:
     """Treina o pipeline nos textos e rótulos recebidos."""
+    validate_dataset(dataset)
+    if set(dataset.urgency_label) != set(LABEL_NAMES):
+        raise ValueError("Training requires all three urgency classes")
     model = build_pipeline()
-    return model.fit(dataset["medical_abstract"], dataset["condition_label"])
+    return model.fit(dataset["report_text"], dataset["urgency_label"])
 
 
 def evaluate_model(model: Any, dataset: pd.DataFrame) -> dict[str, Any]:
     """Calcula métricas de classificação para um dataset rotulado."""
-    expected = dataset["condition_label"]
-    predicted = model.predict(dataset["medical_abstract"].tolist())
+    expected = dataset["urgency_label"]
+    predicted = model.predict(dataset["report_text"].tolist())
     labels = list(LABEL_NAMES)
     details = classification_report(
         expected, predicted, labels=labels, output_dict=True, zero_division=0
@@ -61,10 +69,13 @@ def predictions_match(first: np.ndarray, second: np.ndarray) -> bool:
 
 def grouped_holdout(dataset: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Usa o primeiro fold estratificado por grupos, aproximadamente 80/20."""
-    groups = text_groups(dataset)
+    groups = scenario_groups(dataset)
     splitter = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=42)
-    train, validation = next(splitter.split(dataset, dataset.condition_label, groups))
+    train, validation = next(splitter.split(dataset, dataset.urgency_label, groups))
     assert not set(groups.iloc[train]) & set(groups.iloc[validation])
+    assert not set(text_groups(dataset.iloc[train])) & set(
+        text_groups(dataset.iloc[validation])
+    )
     return dataset.iloc[train], dataset.iloc[validation]
 
 
@@ -73,23 +84,38 @@ def validate_baseline(dataset: pd.DataFrame) -> dict[str, Any]:
     train, validation = grouped_holdout(dataset)
     model = train_model(train)
     dummy = DummyClassifier(strategy="most_frequent")
-    dummy.fit(train.medical_abstract, train.condition_label)
+    dummy.fit(train.report_text, train.urgency_label)
     return {
         "method": "Primeiro fold StratifiedGroupKFold(5, shuffle=True, seed=42)",
         "train_rows": len(train),
         "validation_rows": len(validation),
         "shared_text_groups": 0,
+        "shared_scenario_groups": 0,
+        "train_scenarios": train.scenario_id.nunique(),
+        "validation_scenarios": validation.scenario_id.nunique(),
         "model": evaluate_model(model, validation),
         "majority_baseline": evaluate_model(dummy, validation),
-        "policy": "Rótulos ambíguos preservados; nenhuma escolha arbitrária de classe.",
+        "policy": (
+            "Validação por cenário sintético. Variações do mesmo caso ficam juntas. "
+            "Sem evidência clínica."
+        ),
     }
 
 
-def test_partitions(train: pd.DataFrame, test: pd.DataFrame) -> dict[str, pd.DataFrame]:
-    """Mantém o teste original e explicita o subconjunto sem overlap exato."""
-    seen = text_groups(test).isin(set(text_groups(train)))
+def scenario_evaluation(model: Any, dataset: pd.DataFrame) -> dict[str, Any]:
+    """Avalia uma redação fixa por cenário, sem inflar o suporte com variações."""
+    cases = dataset.drop_duplicates("scenario_id").copy()
+    predicted = model.predict(cases.report_text.tolist()).astype(int)
+    cases["predicted_label"] = predicted
+    errors = cases[cases.urgency_label.ne(cases.predicted_label)]
     return {
-        "supplied_test": test,
-        "unseen_texts": test[~seen],
-        "seen_texts": test[seen],
+        "method": "Primeira variação determinística de cada cenário, sem votação.",
+        "metrics": evaluate_model(model, cases),
+        "underassigned": int((predicted < cases.urgency_label).sum()),
+        "overassigned": int((predicted > cases.urgency_label).sum()),
+        "urgent_as_normal": int(((predicted == 0) & cases.urgency_label.eq(2)).sum()),
+        "errors": errors[["scenario_id", "urgency_label", "predicted_label"]].to_dict(
+            "records"
+        ),
+        "caveat": "Erros sintéticos, não estimativas de segurança clínica.",
     }

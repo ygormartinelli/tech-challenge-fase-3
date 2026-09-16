@@ -1,4 +1,4 @@
-.PHONY: install lint test validate eda notebook train optimize evaluate benchmark publish pipeline run compose airflow smoke api-benchmark
+.PHONY: install lint test generate validate eda notebook train optimize evaluate benchmark publish pipeline run compose airflow smoke api-benchmark
 
 install:
 	uv sync --frozen --all-groups
@@ -10,7 +10,7 @@ lint:
 test:
 	uv run --frozen pytest
 
-validate eda train optimize evaluate benchmark publish:
+generate validate eda train optimize evaluate benchmark publish:
 	uv run --frozen python -m techchallenge_fase3.pipelines.$@
 
 pipeline:

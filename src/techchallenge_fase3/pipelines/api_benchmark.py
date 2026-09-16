@@ -9,7 +9,7 @@ import numpy as np
 from dotenv import load_dotenv
 
 from techchallenge_fase3.config import Settings
-from techchallenge_fase3.data import load_dataset
+from techchallenge_fase3.data import LABEL_NAMES, TASK_ID, load_dataset
 from techchallenge_fase3.reporting import environment, file_hash, write_json
 
 ITERATIONS = 200
@@ -18,12 +18,14 @@ WARMUP_ITERATIONS = 20
 
 def request_prediction(url: str, text: str) -> dict:
     """Recebe e valida a resposta completa, sem persistir abstracts."""
-    payload = json.dumps({"medical_abstract": text}).encode()
+    payload = json.dumps({"report_text": text}).encode()
     request = Request(url, data=payload, headers={"Content-Type": "application/json"})
     with urlopen(request, timeout=10) as response:
         result = json.load(response)
-        if result.get("condition_label") not in range(1, 6):
+        if result.get("urgency_label") not in LABEL_NAMES:
             raise ValueError("API returned an invalid prediction")
+        if result.get("data_origin") != "synthetic":
+            raise ValueError("API did not declare the synthetic origin")
         return result
 
 
@@ -62,8 +64,10 @@ def main() -> None:
     with urlopen(base + "/health", timeout=10) as response:
         variant = json.load(response)["model_variant"]
     data = load_dataset(settings.test_path)
-    texts = data.sample(n=ITERATIONS, random_state=42).medical_abstract.tolist()
+    texts = data.sample(n=ITERATIONS, random_state=42).report_text.tolist()
     report = {
+        "task_id": TASK_ID,
+        "data_origin": "synthetic",
         "environment": environment(),
         "variant": variant,
         "seed": 42,

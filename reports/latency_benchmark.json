@@ -1,6 +1,8 @@
 {
+  "task_id": "synthetic_urgency_v1",
+  "data_origin": "synthetic",
   "environment": {
-    "created_at": "2026-09-15T13:27:07.897571+00:00",
+    "created_at": "2026-09-16T00:35:18.785612+00:00",
     "python": "3.11.15",
     "platform": "Windows-10-10.0.26200-SP0",
     "packages": {
@@ -16,72 +18,72 @@
   "warmup_iterations": 20,
   "rounds": 3,
   "contract": "single text -> label and probabilities; sequential, CPU",
-  "test_sha256": "1eecea73c9ecad292c55e10403bd139fab9580545d6878482997c5564d51ac05",
+  "test_sha256": "18ebf65a7535fa0a3588ded2a8bb289ccdb3603c0a3226ecc2d38a8e6caaec1d",
   "model_hashes": {
-    "classifier.joblib": "855ea8784e5d4bc159f4d598fe110881dad9e9b2a46392b28e15943aaf1e3a5a",
-    "classifier.onnx": "4c8ddeec5d5f2d8da352919b88cbaee43eb9bab5b54f8ef5a45a9a620b61425c"
+    "classifier.joblib": "e00db633387e9d09c8af441e679011fd63bb5619d159860436a777e7ccc1fc59",
+    "classifier.onnx": "dc0ee96028e8f95ceb5b735015b8e35aad8ead11728f88678a6b91add19e87dd"
   },
   "equivalence": {
-    "rows": 2894,
+    "rows": 606,
     "label_mismatches": 0,
-    "max_probability_absolute_error": 2.0603615880077086e-07,
+    "max_probability_absolute_error": 1.3364044648689344e-07,
     "probability_tolerance": 1e-05,
     "passed": true
   },
   "latency": {
     "original": {
-      "mean_ms": 1.1225366666690206,
-      "p50_ms": 1.0616500001106033,
-      "p95_ms": 1.6353949997892412,
-      "throughput_per_second": 890.8394974458766
+      "mean_ms": 0.7631761666561943,
+      "p50_ms": 0.7277000004251022,
+      "p95_ms": 0.9845050022704526,
+      "throughput_per_second": 1310.3134553866294
     },
     "optimized": {
-      "mean_ms": 0.3289625000040057,
-      "p50_ms": 0.28044999999110587,
-      "p95_ms": 0.6176650001634697,
-      "throughput_per_second": 3039.8601663953286
+      "mean_ms": 0.03746750001179559,
+      "p50_ms": 0.03510000169626437,
+      "p95_ms": 0.04710499852080829,
+      "throughput_per_second": 26689.797816378945
     },
     "rounds": [
       {
         "original": {
-          "mean_ms": 1.1623685000017758,
-          "p50_ms": 1.0806000000229687,
-          "p95_ms": 1.7755950001856036,
-          "throughput_per_second": 860.3123708174062
+          "mean_ms": 0.7476125000721368,
+          "p50_ms": 0.7163499994931044,
+          "p95_ms": 0.9286049986258149,
+          "throughput_per_second": 1337.5913322791025
         },
         "optimized": {
-          "mean_ms": 0.2668184999993173,
-          "p50_ms": 0.2559999998084095,
-          "p95_ms": 0.36968000017623115,
-          "throughput_per_second": 3747.8660587723816
+          "mean_ms": 0.03830849995210883,
+          "p50_ms": 0.03635000030044466,
+          "p95_ms": 0.04650499777199002,
+          "throughput_per_second": 26103.867320572317
         }
       },
       {
         "optimized": {
-          "mean_ms": 0.27007700000467594,
-          "p50_ms": 0.26219999995191756,
-          "p95_ms": 0.36255500021979953,
-          "throughput_per_second": 3702.6477633515137
+          "mean_ms": 0.03595100008169538,
+          "p50_ms": 0.034350001442362554,
+          "p95_ms": 0.041415002306166564,
+          "throughput_per_second": 27815.637888447913
         },
         "original": {
-          "mean_ms": 1.0952599999905033,
-          "p50_ms": 1.0640000000421423,
-          "p95_ms": 1.4711850001731364,
-          "throughput_per_second": 913.0252177644311
+          "mean_ms": 0.767552999950567,
+          "p50_ms": 0.7415000018227147,
+          "p95_ms": 0.9982800002035219,
+          "throughput_per_second": 1302.8416279584646
         }
       },
       {
         "original": {
-          "mean_ms": 1.1099815000147828,
-          "p50_ms": 1.0465500001828332,
-          "p95_ms": 1.7954600001075958,
-          "throughput_per_second": 900.9159161541719
+          "mean_ms": 0.774362999945879,
+          "p50_ms": 0.7315000020753359,
+          "p95_ms": 1.0779850028484357,
+          "throughput_per_second": 1291.3840150806418
         },
         "optimized": {
-          "mean_ms": 0.44999200000802375,
-          "p50_ms": 0.43325000001459557,
-          "p95_ms": 0.6932149999101961,
-          "throughput_per_second": 2222.2617290577814
+          "mean_ms": 0.03814300000158255,
+          "p50_ms": 0.03470000228844583,
+          "p95_ms": 0.051364997852942886,
+          "throughput_per_second": 26217.13027183258
         }
       }
     ]

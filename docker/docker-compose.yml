@@ -7,7 +7,7 @@ services:
       dockerfile: docker/Dockerfile
     environment:
       MODEL_DIR: /app/models
-      DATA_DIR: /app/data/raw
+      DATA_DIR: /app/data/synthetic_triage
       MODEL_VARIANT: ${MODEL_VARIANT:-optimized}
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
@@ -62,7 +62,7 @@ services:
       - "127.0.0.1:${AIRFLOW_PORT:-8080}:8080"
     volumes:
       - ../models:/opt/project/models
-      - ../data/raw:/opt/project/data/raw:ro
+      - ../data/synthetic_triage:/opt/project/data/synthetic_triage:ro
       - ../reports:/opt/airflow/reports
       - ../dags:/opt/airflow/dags:ro
       - airflow-data:/opt/airflow

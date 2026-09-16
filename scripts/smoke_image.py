@@ -8,36 +8,29 @@ from time import monotonic, sleep
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-import pandas as pd
-
 from techchallenge_fase3.artifacts import export_onnx, save_original
+from techchallenge_fase3.data import TASK_ID
 from techchallenge_fase3.modeling import train_model
+from techchallenge_fase3.pipelines.generate import build_datasets
 from techchallenge_fase3.reporting import file_hash, write_json
 
 
 def fixture_release(root: Path) -> None:
     """Publica somente uma fixture original, sem alegar aprovação de benchmark."""
-    terms = [
-        "tumor cancer",
-        "bowel liver",
-        "brain nerve",
-        "heart pressure",
-        "general syndrome",
-    ]
-    data = pd.DataFrame(
-        [
-            {"medical_abstract": text, "condition_label": index + 1}
-            for index, text in enumerate(terms)
-            for _ in range(3)
-        ]
-    )
-    model = train_model(data)
+    train, _ = build_datasets()
+    model = train_model(train.drop_duplicates("scenario_id"))
     release = root / "releases/fixture"
     save_original(model, release)
     export_onnx(model, release)
     hashes = {path.name: file_hash(path) for path in release.iterdir()}
     write_json(
-        release / "manifest.json", {"model_hashes": hashes, "optimized_approved": False}
+        release / "manifest.json",
+        {
+            "model_hashes": hashes,
+            "optimized_approved": False,
+            "task_id": TASK_ID,
+            "data_origin": "synthetic",
+        },
     )
     write_json(root / "current.json", {"release": "releases/fixture"})
     root.chmod(0o755)
@@ -65,13 +58,14 @@ def wait_ready(url: str) -> None:
 
 def verify(url: str) -> None:
     """Verifica predição, rejeição e exposição das métricas no container."""
-    payload = json.dumps({"medical_abstract": "Tumor cancer treatment study"}).encode()
+    payload = json.dumps({"report_text": "Exame sem alterações agudas."}).encode()
     request = Request(
         url + "/predict", data=payload, headers={"Content-Type": "application/json"}
     )
     with urlopen(request, timeout=5) as response:
         result = json.load(response)
-        assert result["condition_label"] in range(1, 6)
+        assert result["urgency_label"] in range(3)
+        assert result["data_origin"] == "synthetic"
         assert result["model_variant"] == "original"
     try:
         urlopen(

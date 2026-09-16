@@ -1,7 +1,7 @@
 [project]
 name = "techchallenge-fase3"
-version = "0.1.0"
-description = "Classificador educacional de resumos médicos com FastAPI e ONNX Runtime."
+version = "0.2.0"
+description = "Simulação acadêmica de urgência em laudos sintéticos com FastAPI e ONNX Runtime."
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 dependencies = [
@@ -48,6 +48,7 @@ select = ["E", "F", "I", "B", "UP"]
 
 [tool.ruff.lint.per-file-ignores]
 "notebooks/*.ipynb" = ["E402", "E501"]
+"src/techchallenge_fase3/synthetic_cases.py" = ["E501"]
 
 [build-system]
 requires = ["hatchling>=1.26"]

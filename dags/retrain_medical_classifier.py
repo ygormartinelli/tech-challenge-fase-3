@@ -14,9 +14,9 @@ with DAG(
     start_date=datetime(2025, 1, 1, tzinfo=UTC),
     catchup=False,
     max_active_runs=1,
-    tags=["medical", "training"],
+    tags=["synthetic", "urgency", "training"],
     default_args={"retries": 0},
-    description="Retreino com avaliação e publicação de candidatos aprovados.",
+    description="Urgência sintética: validação, retreino e publicação com gate ONNX.",
 ) as dag:
     previous = None
     for stage in STAGES:

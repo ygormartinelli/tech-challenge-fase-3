@@ -1,0 +1,22 @@
+{
+  "task_id": "synthetic_urgency_v1",
+  "source_type": "synthetic",
+  "seed": 42,
+  "language": "pt-BR",
+  "clinically_validated": false,
+  "adaptation": "Corpus sugerido usado como referência temática, não como fonte de rótulos de urgência ou textos de treino.",
+  "reference": "https://github.com/sebischair/Medical-Abstracts-TC-Corpus",
+  "label_policy": "Cenários e rótulos fictícios autorais para simulação acadêmica. Não são decisões clínicas.",
+  "split_policy": "Cenários separados antes da expansão. Não há cenário-base compartilhado entre treino e teste.",
+  "train_rows": 2700,
+  "test_rows": 600,
+  "train_scenarios": 45,
+  "test_scenarios": 30,
+  "recipe_sha256": "21a789f9909e48651b8329a3332ddbe25a095b55ec1bd6a1b3be61ffb85d242c",
+  "generator_sha256": "7458699b92842d37f7a559ae9a7cc94a0d1a236fc90eff91ab2adb036242349b",
+  "files": {
+    "synthetic_triage_train.csv": "7482700fe0c5ffafd2902aea557704c7c5718cea979f19ff934d88a95576cad9",
+    "synthetic_triage_test.csv": "18ebf65a7535fa0a3588ded2a8bb289ccdb3603c0a3226ecc2d38a8e6caaec1d",
+    "synthetic_triage_labels.csv": "353a4b7e28000a11494d3cd4fc6b7755b4ecc3ff96583ceea5d962bcaba217ae"
+  }
+}

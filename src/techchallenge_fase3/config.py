@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    data_dir: Path = Path("data/raw")
+    data_dir: Path = Path("data/synthetic_triage")
     model_dir: Path = Path("models")
     report_dir: Path = Path("reports")
     candidate_name: str = "candidate"
@@ -25,14 +25,14 @@ class Settings(BaseSettings):
     @property
     def train_path(self) -> Path:
         """Retorna o caminho do conjunto de treino."""
-        return self.data_dir / "medical_tc_train.csv"
+        return self.data_dir / "synthetic_triage_train.csv"
 
     @property
     def test_path(self) -> Path:
         """Retorna o caminho do conjunto de teste."""
-        return self.data_dir / "medical_tc_test.csv"
+        return self.data_dir / "synthetic_triage_test.csv"
 
     @property
     def labels_path(self) -> Path:
         """Retorna o caminho do catálogo de rótulos."""
-        return self.data_dir / "medical_tc_labels.csv"
+        return self.data_dir / "synthetic_triage_labels.csv"

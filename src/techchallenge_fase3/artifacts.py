@@ -10,6 +10,7 @@ import onnxruntime as ort
 from skl2onnx import convert_sklearn
 from skl2onnx.common.data_types import StringTensorType
 
+from techchallenge_fase3.data import TASK_ID
 from techchallenge_fase3.reporting import file_hash
 
 ORIGINAL_MODEL = "classifier.joblib"
@@ -46,7 +47,7 @@ def export_onnx(model: Any, model_dir: Path) -> Path:
     vectorizer = model.named_steps["vectorizer"]
     onnx_model = convert_sklearn(
         model,
-        initial_types=[("medical_abstract", StringTensorType([None, 1]))],
+        initial_types=[("report_text", StringTensorType([None, 1]))],
         options={
             id(classifier): {"zipmap": False},
             id(vectorizer): {"tokenexp": vectorizer.token_pattern},
@@ -118,6 +119,8 @@ def published_directory(model_dir: Path) -> Path:
 def validate_release(release: Path) -> dict[str, Any]:
     """Confere integridade e vínculo entre aprovação e os dois modelos."""
     manifest = json.loads((release / "manifest.json").read_text(encoding="utf-8"))
+    if manifest.get("task_id") != TASK_ID or manifest.get("data_origin") != "synthetic":
+        raise ValueError("Release task does not match synthetic urgency")
     for name in (ORIGINAL_MODEL, OPTIMIZED_MODEL):
         if file_hash(release / name) != manifest["model_hashes"][name]:
             raise ValueError("Model integrity check failed")
